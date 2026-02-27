@@ -2,8 +2,17 @@
 
 All notable changes to **BetterCal** will be documented in this file.
 
-## [Unreleased]
+## [0.2.0] - 2026-02-27
+### Added
+- **Event Details Overlay**: Clicking an active event across any calendar view now triggers a minimalist information overlay containing Title, Time, Location, and Tag without triggering grid creation actions.
+- **Contextual Event Modal**: Clicking any empty calendar cell or timeline grid slot instantly opens an Event Preview overlaid specifically for that contextual date.
 
+### Changed
+- **Fixed Calendar Grid Height**: Standardized the Month view grid to strictly calculate 42 days (6 weeks) to completely stop vertical UI layout shifting on month traverse.
+- **Streamlined Command Shortcuts**: Simplified system hotkeys to `n` (New Event) and `g` (Smart Goal). Replaced verbose jargon like "Predictive Slotting" with clean labels.
+- **Inline View Switching**: Replaced the clunky "Views" dropdown overlay with a buttery smooth inline expansion (Day | Week | Month), which collapses cleanly when clicking top-level nodes like Schedule.
+
+## [0.1.0] - 2026-02-26
 ### Added
 - **Smart Goals Engine**: Predictive ghost slots for recurring objectives. "Penciled-in" sessions that you can confirm or bounce with a single click.
 - **Liquid Task Inbox**: A flickable panel on the right for unstructured tasks. Drag tasks onto the calendar to solidify them into time blocks.
@@ -22,4 +31,5 @@ All notable changes to **BetterCal** will be documented in this file.
 - Command bar "Live Preview" parsing logic to handle days of the week.
 
 ---
-*Last updated: 2026-02-26*
+*Last updated: 2026-02-27*
+

@@ -30,12 +30,15 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
   background: var(--background);
   color: var(--foreground);
+  overflow: hidden;
+  height: 100vh;
 }
 
 .app-wrapper {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
 
 /* Header with Dynamic 'Vibe' Glow */
@@ -54,7 +57,7 @@ body {
 .nav-left {
   display: flex;
   align-items: center;
-  gap: 120px;
+  gap: 64px;
 }
 
 .logo-text {
@@ -68,7 +71,7 @@ body {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 16px;
 }
 
 .nav-link {
@@ -119,13 +122,13 @@ body {
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 120px;
+  gap: 64px;
 }
 
 .nav-right-group {
   display: flex;
   align-items: center;
-  gap: 48px;
+  gap: 32px;
 }
 
 .month-display {
@@ -155,7 +158,7 @@ body {
 .nav-controls {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 12px;
 }
 
 .text-btn {
@@ -307,17 +310,18 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0 80px 80px 80px;
+  padding: 0 80px 40px 80px;
+  overflow: hidden;
 }
 
 .grid-cols {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  margin-bottom: 24px;
+  flex-shrink: 0;
 }
 
 .grid-label {
-  padding: 16px 0;
+  padding: 12px 0;
   font-size: 11px;
   font-weight: 700;
   color: var(--muted);
@@ -329,15 +333,16 @@ body {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   grid-template-rows: repeat(6, 1fr);
+  min-height: 0;
 }
 
 .day-box {
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   cursor: pointer;
   transition: background 0.3s ease;
   position: relative;
@@ -532,26 +537,21 @@ body {
   color: #a1a1aa;
 }
 
-.command-preview {
+.command-preview-box {
   padding: 32px;
-  background: #fcfcfc;
+  background: white;
+  border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  border-top: 1px solid var(--border);
-}
-
-.preview-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 16px;
 }
 
 .preview-label {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
-  color: var(--muted);
-  letter-spacing: 0.15em;
+  color: var(--rose-text);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -562,33 +562,13 @@ body {
   display: inline-block;
   width: 4px;
   height: 4px;
-  background: var(--current-vibe);
+  background: var(--rose-text);
   border-radius: 50%;
 }
 
-.vibe-indicator-bar {
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-  margin: 0 16px;
-  position: relative;
-}
-
-.vibe-indicator-bar::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 30%;
-  background: var(--current-vibe);
-  box-shadow: 0 0 8px var(--current-vibe);
-  transition: all 0.5s ease;
-}
-
-.preview-details {
+.preview-items {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 48px;
 }
 
@@ -653,10 +633,10 @@ body {
 
 /* Schedule View (Agenda) */
 .schedule-view {
-  padding: 0 80px 80px 80px;
+  padding: 0 80px 40px 80px;
   max-width: 1440px;
   flex: 1;
-  overflow-y: auto;
+  overflow-y: hidden;
 }
 
 .schedule-day {
@@ -756,7 +736,8 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0 80px 80px 80px;
+  padding: 0 80px 40px 80px;
+  overflow: hidden;
 }
 
 .week-matrix {
@@ -819,7 +800,8 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0 80px 80px 80px;
+  padding: 0 80px 40px 80px;
+  overflow: hidden;
 }
 
 .day-header {

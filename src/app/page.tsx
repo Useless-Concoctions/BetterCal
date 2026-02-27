@@ -43,10 +43,10 @@ interface CalendarEvent {
 
 const getEventType = (title: string): EventType => {
   const t = title.toLowerCase()
-  if (t.includes('urgent') || t.includes('deadline') || t.includes('asap')) return 'urgent'
-  if (t.includes('gym') || t.includes('run') || t.includes('health') || t.includes('meditate')) return 'health'
-  if (t.includes('meet') || t.includes('sync') || t.includes('dinner') || t.includes('coffee') || t.includes('call')) return 'social'
-  if (t.includes('focus') || t.includes('code') || t.includes('project') || t.includes('work')) return 'focus'
+  if (t.includes('#urgent')) return 'urgent'
+  if (t.includes('#health')) return 'health'
+  if (t.includes('#social')) return 'social'
+  if (t.includes('#focus')) return 'focus'
   return 'admin'
 }
 
@@ -96,6 +96,9 @@ export default function CalendarPage() {
   const [view, setView] = useState<'month' | 'week' | 'day' | 'schedule'>('month')
   const [isViewsOpen, setIsViewsOpen] = useState(false)
   const [isCommandOpen, setIsCommandOpen] = useState(false)
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  const [modalDateContext, setModalDateContext] = useState<Date | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [commandInput, setCommandInput] = useState('')
   const [events, setEvents] = useState<CalendarEvent[]>(MOCK_EVENTS)
   const [activeVibe, setActiveVibe] = useState<EventType>('admin')
@@ -128,13 +131,6 @@ export default function CalendarPage() {
     return () => clearInterval(timer)
   }, [events])
 
-  const goalStats = useMemo(() => {
-    const allGoals = events.filter(e => e.isGoal)
-    const confirmed = allGoals.filter(e => e.confirmed).length
-    const total = allGoals.length
-    const percent = total > 0 ? Math.round((confirmed / total) * 100) : 0
-    return { confirmed, total, percent }
-  }, [events])
 
   const parsedPreview = useMemo(() => {
     if (!commandInput) {
@@ -169,6 +165,7 @@ export default function CalendarPage() {
       title = title.replace(new RegExp(`\\s*${word}\\s*`, 'i'), ' ')
     })
     title = title.replace(/^goal:|^smart:/i, '').trim()
+    title = title.replace(/#(focus|social|health|urgent)\b/gi, '').trim()
 
     return {
       title: title || 'Untitled Event',
@@ -180,24 +177,34 @@ export default function CalendarPage() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'c' && !isCommandOpen) {
+      // 'n' for new event
+      if (e.key === 'n' && !isCommandOpen && e.target === document.body) {
         e.preventDefault()
         setIsCommandOpen(true)
       }
-      if (e.key === 'Escape' && isCommandOpen) {
-        setIsCommandOpen(false)
+      // 'g' for smart goal
+      if (e.key === 'g' && !isCommandOpen && e.target === document.body) {
+        e.preventDefault()
+        setIsCommandOpen(true)
+        setCommandInput('Goal: ')
+      }
+      if (e.key === 'Escape') {
+        if (isCommandOpen) setIsCommandOpen(false)
+        if (selectedEvent) setSelectedEvent(null)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isCommandOpen])
+  }, [isCommandOpen, selectedEvent])
 
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(monthStart)
   const startDate = startOfWeek(monthStart)
-  const endDate = endOfWeek(monthEnd)
 
-  const calendarDays = eachDayOfInterval({ start: startDate, end: endDate })
+  // Calculate fixed 42-day block to always show exactly 6 weeks
+  // This guarantees the calendar height never shifts between months
+  const calendarDays = Array.from({ length: 42 }).map((_, i) => addDays(startDate, i))
+
   const weekStart = startOfWeek(currentDate)
   const weekEnd = endOfWeek(currentDate)
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
@@ -239,41 +246,44 @@ export default function CalendarPage() {
           <div className="nav-links">
             <div
               className={`nav-link ${view === 'month' ? 'active' : ''}`}
-              onClick={() => setView('month')}
+              onClick={() => {
+                setView('month')
+                setIsViewsOpen(false)
+              }}
             >
               Calendar
             </div>
 
-            <div className="nav-link-container">
+            <div className="nav-link-container" style={{ display: 'flex', alignItems: 'center' }}>
               <div
                 className={`nav-link ${(view === 'week' || view === 'day') ? 'active' : ''}`}
                 onClick={() => setIsViewsOpen(!isViewsOpen)}
               >
-                Views <ChevronDown size={14} strokeWidth={1.5} className="nav-link-sub" style={{ transform: isViewsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                Views
               </div>
 
               <AnimatePresence>
                 {isViewsOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="views-dropdown"
+                    initial={{ width: 0, opacity: 0, marginLeft: 0 }}
+                    animate={{ width: 'auto', opacity: 1, marginLeft: 16 }}
+                    exit={{ width: 0, opacity: 0, marginLeft: 0 }}
+                    style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', gap: '16px', whiteSpace: 'nowrap' }}
                   >
                     {[
-                      { id: 'month', label: 'Month' },
+                      { id: 'day', label: 'Day' },
                       { id: 'week', label: 'Week' },
-                      { id: 'day', label: 'Day' }
+                      { id: 'month', label: 'Month' }
                     ].map(v => (
                       <div
                         key={v.id}
-                        className={`dropdown-item ${view === v.id ? 'active' : ''}`}
+                        className={`nav-link-sub ${view === v.id ? 'active' : ''}`}
+                        style={{ cursor: 'pointer', fontSize: '13px', fontWeight: view === v.id ? 900 : 500, color: 'var(--foreground)', opacity: view === v.id ? 1 : 0.4, transition: 'opacity 0.2s', letterSpacing: '-0.01em' }}
                         onClick={() => {
                           setView(v.id as any)
                           setIsViewsOpen(false)
                         }}
                       >
-                        <div className={`layer-dot ${view === v.id ? 'active' : ''}`} />
                         {v.label}
                       </div>
                     ))}
@@ -284,9 +294,12 @@ export default function CalendarPage() {
 
             <div
               className={`nav-link ${view === 'schedule' ? 'active' : ''}`}
-              onClick={() => setView('schedule')}
+              onClick={() => {
+                setView('schedule')
+                setIsViewsOpen(false)
+              }}
             >
-              Schedule <ArrowUpRight size={13} strokeWidth={1.5} className="nav-link-sub" />
+              Schedule
             </div>
           </div>
         </div>
@@ -325,6 +338,10 @@ export default function CalendarPage() {
                   <div
                     key={day.toString()}
                     className={`day-box ${!isCurrMonth ? 'off-month' : ''} ${isTday ? 'today' : ''}`}
+                    onClick={() => {
+                      setModalDateContext(day)
+                      setIsEventModalOpen(true)
+                    }}
                   >
                     <div className="day-gravity-tint" />
 
@@ -338,9 +355,11 @@ export default function CalendarPage() {
                           className={`event-chip type-${event.type} ${event.isGoal && !event.confirmed ? 'ghost-goal' : ''}`}
                           style={{ marginBottom: '4px', cursor: event.isGoal && !event.confirmed ? 'alias' : 'pointer' }}
                           onClick={(e) => {
+                            e.stopPropagation()
                             if (event.isGoal && !event.confirmed) {
-                              e.stopPropagation()
                               setEvents(prev => prev.map(ev => ev.id === event.id ? { ...ev, confirmed: true } : ev))
+                            } else {
+                              setSelectedEvent(event)
                             }
                           }}
                         >
@@ -372,6 +391,11 @@ export default function CalendarPage() {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       className="schedule-item"
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedEvent(event)
+                      }}
                     >
                       <div className="item-time">
                         {format(event.start, 'h:mm a')}
@@ -406,7 +430,14 @@ export default function CalendarPage() {
               {weekDays.map(day => {
                 const dayEvents = events.filter((e: CalendarEvent) => isSameDay(e.start, day))
                 return (
-                  <div key={day.toString()} className={`week-col ${isToday(day) ? 'today' : ''}`}>
+                  <div
+                    key={day.toString()}
+                    className={`week-col ${isToday(day) ? 'today' : ''}`}
+                    onClick={() => {
+                      setModalDateContext(day)
+                      setIsEventModalOpen(true)
+                    }}
+                  >
                     <div className="event-list">
                       {dayEvents.map((event: CalendarEvent) => (
                         <motion.div
@@ -415,9 +446,12 @@ export default function CalendarPage() {
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           className={`event-chip type-${event.type} ${event.isGoal && !event.confirmed ? 'ghost-goal' : ''}`}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation()
                             if (event.isGoal && !event.confirmed) {
                               setEvents(prev => prev.map(ev => ev.id === event.id ? { ...ev, confirmed: true } : ev))
+                            } else {
+                              setSelectedEvent(event)
                             }
                           }}
                         >
@@ -451,7 +485,15 @@ export default function CalendarPage() {
                 )
 
                 return (
-                  <div key={i} className="timeline-row">
+                  <div
+                    key={i}
+                    className="timeline-row"
+                    onClick={() => {
+                      setModalDateContext(hourDate)
+                      setIsEventModalOpen(true)
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <div className="row-time">{format(hourDate, 'h aa')}</div>
                     <div className="row-content">
                       {hourEvents.map((event: CalendarEvent) => (
@@ -461,9 +503,12 @@ export default function CalendarPage() {
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           className={`event-chip type-${event.type} ${event.isGoal && !event.confirmed ? 'ghost-goal' : ''}`}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation()
                             if (event.isGoal && !event.confirmed) {
                               setEvents(prev => prev.map(ev => ev.id === event.id ? { ...ev, confirmed: true } : ev))
+                            } else {
+                              setSelectedEvent(event)
                             }
                           }}
                         >
@@ -501,7 +546,7 @@ export default function CalendarPage() {
                   autoFocus
                   type="text"
                   className="command-input"
-                  placeholder="Focus on kernel at 10am today..."
+                  placeholder="Design review at 10am today #focus..."
                   value={commandInput}
                   onChange={e => setCommandInput(e.target.value)}
                   onKeyDown={e => {
@@ -541,9 +586,9 @@ export default function CalendarPage() {
                 />
               </div>
 
-              <div className="command-preview">
-                <div className="preview-label">Predictive Slotting</div>
-                <div className="preview-details">
+              <div className="command-preview-box">
+                <div className="preview-label">Command Preview</div>
+                <div className="preview-items">
                   <div className="preview-item">
                     <span className="preview-key">Event</span>
                     <span className="preview-value" style={{ color: `var(--${parsedPreview.type}-text)` }}>{parsedPreview.title}</span>
@@ -562,11 +607,90 @@ export default function CalendarPage() {
               </div>
 
               <div className="command-footer">
-                <div className="shortcut-hint">
-                  <span className="key-cap">ESC</span> to Cancel
+                <div className="shortcut-hint"><span className="key-cap">n</span> New Event</div>
+                <div className="shortcut-hint"><span className="key-cap">#</span> Tag</div>
+                <div className="shortcut-hint"><span className="key-cap">esc</span> Close</div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isEventModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="command-overlay"
+            onClick={() => setIsEventModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 10 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="command-palette"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="command-header">
+                <div className="command-prompt">
+                  <span className="prompt-symbol">→</span>
+                  <input
+                    autoFocus
+                    type="text"
+                    placeholder="E.g., Design Review with Sarah tomorrow at 2pm #social..."
+                    className="command-input"
+                    value={commandInput}
+                    onChange={(e) => setCommandInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && commandInput.trim()) {
+                        const newEvent: CalendarEvent = {
+                          id: Math.random().toString(),
+                          title: parsedPreview.title,
+                          start: modalDateContext ? setHours(modalDateContext, 10) : new Date(),
+                          end: modalDateContext ? setHours(modalDateContext, 11) : setHours(new Date(), getHours(new Date()) + 1),
+                          type: parsedPreview.type,
+                          isGoal: commandInput.toLowerCase().startsWith('goal:'),
+                          confirmed: !commandInput.toLowerCase().startsWith('goal:')
+                        }
+                        setEvents([...events, newEvent])
+                        setCommandInput('')
+                        setIsEventModalOpen(false)
+                      }
+                      if (e.key === 'Escape') {
+                        setIsEventModalOpen(false)
+                      }
+                    }}
+                  />
                 </div>
-                <div className="shortcut-hint">
-                  <span className="key-cap">ENTER</span> to Commit
+              </div>
+
+              <div className="command-preview-box" style={{ background: '#fcfcfc' }}>
+                <div className="preview-label" style={{ color: 'var(--muted)' }}>
+                  {modalDateContext ? format(modalDateContext, 'EEEE, MMMM do yyyy') : 'Event Context'}
+                </div>
+                <div className="preview-items">
+                  <div className="preview-item">
+                    <span className="preview-key">Event</span>
+                    <span className="preview-value" style={{ color: `var(--${parsedPreview.type}-text)` }}>{parsedPreview.title}</span>
+                  </div>
+                  <div className="preview-item">
+                    <span className="preview-key">Context</span>
+                    <span className="preview-value">
+                      {modalDateContext ? (
+                        view === 'day'
+                          ? format(modalDateContext, 'h:mm a')
+                          : format(modalDateContext, 'MMM do, yyyy')
+                      ) : 'Selected Slot'}
+                    </span>
+                  </div>
+                  <div className="preview-item">
+                    <span className="preview-key">Tag</span>
+                    <span className={`event-chip type-${parsedPreview.type}`} style={{ fontSize: '10px', padding: '4px 10px' }}>
+                      {parsedPreview.type}
+                    </span>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -574,26 +698,63 @@ export default function CalendarPage() {
         )}
       </AnimatePresence>
 
-      <motion.div
-        className="goal-tracker-float"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-      >
-        <div className="tracker-label">SPECTRAL RESONANCE</div>
-        <div className="tracker-stats">
-          <span className="stats-num">{goalStats.confirmed}</span>
-          <span className="stats-divider">/</span>
-          <span className="stats-total">{goalStats.total}</span>
-        </div>
-        <div className="tracker-bar-bg">
+      {/* NEW: Event Details Overlay */}
+      <AnimatePresence>
+        {selectedEvent && (
           <motion.div
-            className="tracker-bar-fill"
-            animate={{ width: `${goalStats.percent}%` }}
-            transition={{ type: 'spring', stiffness: 50 }}
-          />
-        </div>
-        <div className="tracker-percent">{goalStats.percent}% COMMITMENT</div>
-      </motion.div>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="command-overlay"
+            onClick={() => setSelectedEvent(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 10 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="command-palette"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="event-details-header" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 800, letterSpacing: '-0.03em', color: `var(--${selectedEvent.type}-text)` }}>
+                  {selectedEvent.title}
+                </h2>
+                <div style={{ color: 'var(--muted)', fontSize: '14px', fontWeight: 500 }}>
+                  {format(selectedEvent.start, 'EEEE, MMMM do, yyyy')}
+                </div>
+              </div>
+
+              <div className="command-preview-box" style={{ background: '#fcfcfc' }}>
+                <div className="preview-items">
+                  <div className="preview-item">
+                    <span className="preview-key">Time</span>
+                    <span className="preview-value">
+                      {format(selectedEvent.start, 'h:mm a')} – {format(selectedEvent.end, 'h:mm a')}
+                    </span>
+                  </div>
+                  {selectedEvent.location && (
+                    <div className="preview-item">
+                      <span className="preview-key">Location</span>
+                      <span className="preview-value">{selectedEvent.location}</span>
+                    </div>
+                  )}
+                  <div className="preview-item">
+                    <span className="preview-key">Tag</span>
+                    <span className={`event-chip type-${selectedEvent.type}`} style={{ fontSize: '10px', padding: '4px 10px', display: 'inline-block' }}>
+                      {selectedEvent.type}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="command-footer">
+                <div className="shortcut-hint"><span className="key-cap">esc</span> Close</div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
