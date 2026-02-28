@@ -1,10 +1,19 @@
-import { PrismaClient } from '../generated/prisma'
+import { PrismaClient } from '@prisma/client'
+import { PrismaLibSql } from '@prisma/adapter-libsql'
+import { createClient } from '@libsql/client'
+
+const libsql = createClient({
+    url: 'file:./dev.db',
+})
+
+const adapter = new PrismaLibSql(libsql)
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
 export const prisma =
     globalForPrisma.prisma ||
     new PrismaClient({
+        adapter,
         log: ['query'],
     })
 
