@@ -1,97 +1,46 @@
 "use client"
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import {
   format,
-  addMonths,
-  subMonths,
   startOfMonth,
   endOfMonth,
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  isSameMonth,
-  isSameDay,
   addDays,
-  isToday,
+  startOfDay,
   setHours,
-  setMinutes,
-  isWithinInterval,
-  getHours,
-  startOfDay
+  setMinutes
 } from 'date-fns'
-import { ChevronDown, ArrowUpRight, Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import * as chrono from 'chrono-node'
+import { CalendarEvent, resolveConflicts, IntelligentSettings, DEFAULT_SETTINGS } from '../lib/calendar-utils'
+import EmojiPicker from 'emoji-picker-react'
+import { useSession, signIn, signOut } from 'next-auth/react'
+import { getEvents, createEvent, updateEvent, deleteEvent } from '../lib/actions'
+
+// Extracted Components
+import { CalendarHeader } from '../components/calendar/CalendarHeader'
+import { MonthView } from '../components/calendar/MonthView'
+import { WeekView } from '../components/calendar/WeekView'
+import { DayView } from '../components/calendar/DayView'
+import { ScheduleView } from '../components/calendar/ScheduleView'
+import { CommandBar } from '../components/calendar/CommandBar'
+
 import './globals.css'
 
-type EventType = 'focus' | 'social' | 'health' | 'admin' | 'urgent'
-
-interface CalendarEvent {
-  id: string
-  title: string
-  start: Date
-  end: Date
-  type: EventType
-  location?: string
-  locationType?: 'anywhere' | 'specific'
-  isGoal?: boolean
-  confirmed?: boolean
-  frequency?: 'daily' | 'weekly' | 'monthly'
-  preferredTime?: 'morning' | 'afternoon' | 'evening'
-  source?: 'personal' | 'work' | 'shared'
-}
-
-const getEventType = (title: string): EventType => {
+const getEmojiForTitle = (title: string): string => {
   const t = title.toLowerCase()
-  if (t.includes('#urgent')) return 'urgent'
-  if (t.includes('#health')) return 'health'
-  if (t.includes('#social')) return 'social'
-  if (t.includes('#focus')) return 'focus'
-  return 'admin'
+  if (t.includes('run') || t.includes('gym') || t.includes('workout')) return '🏃'
+  if (t.includes('dinner') || t.includes('lunch') || t.includes('food') || t.includes('meal')) return '🍲'
+  if (t.includes('meditation') || t.includes('yoga') || t.includes('zen')) return '🧘'
+  if (t.includes('code') || t.includes('dev') || t.includes('work')) return '💻'
+  return '📅'
 }
-
-const MOCK_EVENTS: CalendarEvent[] = [
-  {
-    id: '1',
-    title: 'Focus: Kernel Development',
-    start: setMinutes(setHours(new Date(), 9), 0),
-    end: setMinutes(setHours(new Date(), 12), 0),
-    type: 'focus',
-  },
-  {
-    id: '2',
-    title: 'Smart Goal: Meditation',
-    start: setMinutes(setHours(new Date(), 8), 0),
-    end: setMinutes(setHours(new Date(), 8), 20),
-    type: 'health',
-    isGoal: true,
-    confirmed: false,
-    frequency: 'daily'
-  },
-  {
-    id: '3',
-    title: 'Quick Sync',
-    start: setMinutes(setHours(new Date(), 14), 0),
-    end: setMinutes(setHours(new Date(), 14), 30),
-    type: 'social',
-  },
-  {
-    id: '4',
-    title: 'Dinner with Sarah',
-    start: setMinutes(setHours(addDays(new Date(), 1), 19), 0),
-    end: setMinutes(setHours(addDays(new Date(), 1), 21), 0),
-    type: 'social',
-  },
-  {
-    id: '5',
-    title: 'Morning Run',
-    start: setMinutes(setHours(addDays(new Date(), 2), 7), 0),
-    end: setMinutes(setHours(addDays(new Date(), 2), 8), 0),
-    type: 'health',
-  }
-]
 
 export default function CalendarPage() {
+  const { data: session } = useSession()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<'month' | 'week' | 'day' | 'schedule'>('month')
   const [isViewsOpen, setIsViewsOpen] = useState(false)
@@ -100,661 +49,239 @@ export default function CalendarPage() {
   const [modalDateContext, setModalDateContext] = useState<Date | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [commandInput, setCommandInput] = useState('')
-  const [events, setEvents] = useState<CalendarEvent[]>(MOCK_EVENTS)
-  const [activeVibe, setActiveVibe] = useState<EventType>('admin')
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [popoverPosition, setPopoverPosition] = useState<{ x: number, y: number, width: number, height: number } | null>(null)
+  const [selectedCustomEmoji, setSelectedCustomEmoji] = useState<string | null>(null)
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [settings, setSettings] = useState<IntelligentSettings>(DEFAULT_SETTINGS)
+  const viewsContainerRef = useRef<HTMLDivElement>(null)
 
-  // INNOVATIVE: Real-time 'Vibe' calculation based on current time
+  // Fetch events on mount and when session changes
   useEffect(() => {
-    const checkVibe = () => {
-      const now = new Date()
-      const currentEvent = events.find(event =>
-        isWithinInterval(now, { start: event.start, end: event.end })
-      )
-
-      const vibe = currentEvent ? currentEvent.type : 'admin'
-      setActiveVibe(vibe)
-
-      // Update CSS Variable for global UI tinting
-      const colorMap = {
-        focus: '#1e40af',
-        social: '#be123c',
-        health: '#15803d',
-        admin: '#475569',
-        urgent: '#b45309'
-      }
-      document.documentElement.style.setProperty('--current-vibe', colorMap[vibe])
-      document.documentElement.style.setProperty('--border', vibe === 'admin' ? '#f0f0f0' : `${colorMap[vibe]}22`)
+    if (session?.user?.id) {
+      getEvents(session.user.id).then(data => {
+        setEvents(resolveConflicts(data as CalendarEvent[], settings))
+      })
     }
+  }, [session, settings])
 
-    checkVibe()
-    const timer = setInterval(checkVibe, 60000)
-    return () => clearInterval(timer)
-  }, [events])
+  // Persist settings
+  useEffect(() => {
+    const saved = localStorage.getItem('bettercal_settings')
+    if (saved) {
+      try {
+        setSettings(JSON.parse(saved))
+      } catch (e) {
+        console.error("Failed to parse settings", e)
+      }
+    }
+  }, [])
 
+  useEffect(() => {
+    localStorage.setItem('bettercal_settings', JSON.stringify(settings))
+  }, [settings])
 
   const parsedPreview = useMemo(() => {
-    if (!commandInput) {
-      return { title: 'Untitled Event', date: 'Tomorrow', time: '10:00 AM', type: 'admin' as EventType }
+    if (!commandInput.trim()) return null
+    const refDate = modalDateContext || new Date()
+    const isGoal = /^goal:|^smart:/i.test(commandInput)
+    let tempTitle = commandInput.replace(/^goal:|^smart:/i, '').trim()
+
+    let start = refDate
+    let hasTime = false
+    let duration = 60
+    let preferredTime: 'morning' | 'afternoon' | 'evening' | undefined = undefined
+    let frequency: 'daily' | 'weekly' | 'monthly' | undefined = undefined
+
+    const freqMatch = tempTitle.match(/\bevery\s*day\b|\bdaily\b|\bweekly\b|\bevery\s+week\b/i)
+    if (freqMatch) {
+      const match = freqMatch[0].toLowerCase()
+      if (match.includes('day') || match.includes('daily')) frequency = 'daily'
+      else if (match.includes('week')) frequency = 'weekly'
+      tempTitle = tempTitle.replace(freqMatch[0], '').replace(/\s+/g, ' ').trim()
     }
 
-    const input = commandInput.toLowerCase()
-
-    // SMART NLP: Apple-style "dumb" parsing fix
-    let title = commandInput
-    let time = '10:00 AM'
-    let dateStr = 'Tomorrow'
-
-    // 1. Time Detection (Improved)
-    const timeMatch = commandInput.match(/(\d{1,2}(?::\d{2})?\s*(am|pm))/i)
-    if (timeMatch) {
-      time = timeMatch[0].toUpperCase()
-      title = title.replace(new RegExp(`\\s*at\\s*${timeMatch[0]}\\s*`, 'i'), ' ')
-      title = title.replace(new RegExp(`\\s*${timeMatch[0]}\\s*`, 'i'), ' ')
+    const prefMatch = tempTitle.match(/\bmorning\b|\bafternoon\b|\bevening\b/i)
+    if (prefMatch) {
+      preferredTime = prefMatch[0].toLowerCase() as any
+      tempTitle = tempTitle.replace(prefMatch[0], '').replace(/\s+/g, ' ').trim()
     }
 
-    // 2. Date Detection
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-    days.forEach(day => {
-      if (input.includes(day)) dateStr = day.charAt(0).toUpperCase() + day.slice(1);
-    });
-    if (input.includes('today')) dateStr = 'Today';
-    if (input.includes('tomorrow')) dateStr = 'Tomorrow';
+    const durationMatch = tempTitle.match(/(\d+)\s*(m|min|minute|minutes|h|hr|hour|hours)\b/i)
+    if (durationMatch) {
+      const value = parseInt(durationMatch[1])
+      const unit = durationMatch[2].toLowerCase()
+      if (unit.startsWith('h')) duration = value * 60
+      else duration = value
+      tempTitle = tempTitle.replace(durationMatch[0], '').replace(/\s+/g, ' ').trim()
+    }
 
-    // 3. Cleanup Title
-    ['today', 'tomorrow', 'next week', 'this friday'].forEach((word: string) => {
-      title = title.replace(new RegExp(`\\s*${word}\\s*`, 'i'), ' ')
+    const results = chrono.parse(tempTitle, refDate, { forwardDate: true })
+    if (results.length > 0) {
+      const result = results[0]
+      start = result.start.date()
+      hasTime = result.start.isCertain('hour')
+      tempTitle = tempTitle.replace(result.text, '').replace(/\s+/g, ' ').trim()
+      if (!hasTime && modalDateContext) {
+        start = setHours(setMinutes(start, modalDateContext.getMinutes()), modalDateContext.getHours())
+      }
+    } else {
+      start = modalDateContext ? setHours(setMinutes(start, modalDateContext.getMinutes()), modalDateContext.getHours()) : setHours(setMinutes(start, 0), 10)
+    }
+
+    let title = tempTitle
+      .replace(/#(focus|social|health|urgent)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    return { title: title || 'Untitled Event', start, hasTime, duration, preferredTime, frequency, isGoal }
+  }, [commandInput, modalDateContext])
+
+  const handleCreateEvent = async () => {
+    if (!parsedPreview || !session?.user?.id) return
+
+    const title = parsedPreview.title
+    const emoji = selectedCustomEmoji || getEmojiForTitle(title)
+
+    await createEvent(session.user.id, {
+      title: parsedPreview.isGoal ? `Goal: ${title}` : title,
+      start: parsedPreview.start,
+      end: new Date(parsedPreview.start.getTime() + parsedPreview.duration * 60 * 1000),
+      isGoal: parsedPreview.isGoal,
+      confirmed: !parsedPreview.isGoal,
+      emoji,
+      duration: parsedPreview.duration,
+      preferredTime: parsedPreview.preferredTime,
+      frequency: parsedPreview.frequency
     })
-    title = title.replace(/^goal:|^smart:/i, '').trim()
-    title = title.replace(/#(focus|social|health|urgent)\b/gi, '').trim()
 
-    return {
-      title: title || 'Untitled Event',
-      date: dateStr,
-      time,
-      type: getEventType(commandInput)
-    }
-  }, [commandInput])
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // 'n' for new event
-      if (e.key === 'n' && !isCommandOpen && e.target === document.body) {
-        e.preventDefault()
-        setIsCommandOpen(true)
-      }
-      // 'g' for smart goal
-      if (e.key === 'g' && !isCommandOpen && e.target === document.body) {
-        e.preventDefault()
-        setIsCommandOpen(true)
-        setCommandInput('Goal: ')
-      }
-      if (e.key === 'Escape') {
-        if (isCommandOpen) setIsCommandOpen(false)
-        if (selectedEvent) setSelectedEvent(null)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isCommandOpen, selectedEvent])
+    setCommandInput('')
+    setIsCommandOpen(false)
+    setIsEventModalOpen(false)
+  }
 
   const monthStart = startOfMonth(currentDate)
-  const monthEnd = endOfMonth(monthStart)
   const startDate = startOfWeek(monthStart)
-
-  // Calculate fixed 42-day block to always show exactly 6 weeks
-  // This guarantees the calendar height never shifts between months
   const calendarDays = Array.from({ length: 42 }).map((_, i) => addDays(startDate, i))
 
-  const weekStart = startOfWeek(currentDate)
-  const weekEnd = endOfWeek(currentDate)
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
+  const weekDays = useMemo(() => {
+    const start = startOfWeek(currentDate)
+    return eachDayOfInterval({ start, end: addDays(start, 6) })
+  }, [currentDate])
 
   const groupedEvents = useMemo(() => {
-    const today = startOfDay(new Date())
-    const nextMonth = addDays(today, 60)
-
-    const groups: { [key: string]: CalendarEvent[] } = {}
-
+    const groups = new Map<string, CalendarEvent[]>()
     events.forEach(event => {
-      const d = startOfDay(event.start)
-      if (d >= today && d <= nextMonth) {
-        const key = format(d, 'yyyy-MM-dd')
-        if (!groups[key]) groups[key] = []
-        groups[key].push(event)
+      const dateKey = format(startOfDay(event.start), 'yyyy-MM-dd')
+      if (!groups.has(dateKey)) {
+        groups.set(dateKey, [])
       }
+      groups.get(dateKey)?.push(event)
     })
 
-    return Object.entries(groups)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([dateStr, dayEvents]) => ({
-        date: new Date(dateStr + 'T00:00:00'),
-        events: dayEvents.sort((a, b) => a.start.getTime() - b.start.getTime())
+    return Array.from(groups.entries())
+      .map(([dateStr, items]) => ({
+        date: new Date(dateStr + 'T12:00:00'), // Use noon to avoid TZ shifts
+        events: items.sort((a, b) => a.start.getTime() - b.start.getTime())
       }))
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
   }, [events])
+
+  if (!session) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '20px' }}>
+        <h1 className="logo-text">BetterCal</h1>
+        <button onClick={() => signIn()} className="text-btn bold" style={{ padding: '12px 24px', border: '1px solid var(--border)', borderRadius: '12px' }}>
+          Sign In to Start
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="app-wrapper">
-      <nav className="top-nav">
-        <div className="nav-left">
-          <div
-            className="logo-text"
-            onClick={() => setView('month')}
-            style={{ cursor: 'pointer' }}
-          >
-            BetterCal
-          </div>
-          <div className="nav-links">
-            <div
-              className={`nav-link ${view === 'month' ? 'active' : ''}`}
-              onClick={() => {
-                setView('month')
-                setIsViewsOpen(false)
-              }}
-            >
-              Calendar
-            </div>
-
-            <div className="nav-link-container" style={{ display: 'flex', alignItems: 'center' }}>
-              <div
-                className={`nav-link ${(view === 'week' || view === 'day') ? 'active' : ''}`}
-                onClick={() => setIsViewsOpen(!isViewsOpen)}
-              >
-                Views
-              </div>
-
-              <AnimatePresence>
-                {isViewsOpen && (
-                  <motion.div
-                    initial={{ width: 0, opacity: 0, marginLeft: 0 }}
-                    animate={{ width: 'auto', opacity: 1, marginLeft: 16 }}
-                    exit={{ width: 0, opacity: 0, marginLeft: 0 }}
-                    style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', gap: '16px', whiteSpace: 'nowrap' }}
-                  >
-                    {[
-                      { id: 'day', label: 'Day' },
-                      { id: 'week', label: 'Week' },
-                      { id: 'month', label: 'Month' }
-                    ].map(v => (
-                      <div
-                        key={v.id}
-                        className={`nav-link-sub ${view === v.id ? 'active' : ''}`}
-                        style={{ cursor: 'pointer', fontSize: '13px', fontWeight: view === v.id ? 900 : 500, color: 'var(--foreground)', opacity: view === v.id ? 1 : 0.4, transition: 'opacity 0.2s', letterSpacing: '-0.01em' }}
-                        onClick={() => {
-                          setView(v.id as any)
-                          setIsViewsOpen(false)
-                        }}
-                      >
-                        {v.label}
-                      </div>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div
-              className={`nav-link ${view === 'schedule' ? 'active' : ''}`}
-              onClick={() => {
-                setView('schedule')
-                setIsViewsOpen(false)
-              }}
-            >
-              Schedule
-            </div>
-          </div>
-        </div>
-
-        <div className="nav-right">
-          <div className="nav-controls">
-            <span className="text-btn muted" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>Prev</span>
-            <span className="text-btn bold" onClick={() => setCurrentDate(new Date())}>Today</span>
-            <span className="text-btn muted" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>Next</span>
-          </div>
-          <div className="nav-right-group">
-            <h1 className="month-display">{format(currentDate, 'MMMM yyyy')}</h1>
-            <div className="plus-btn" onClick={() => setIsCommandOpen(true)}>
-              <Plus size={20} strokeWidth={2} />
-            </div>
-          </div>
-        </div>
-      </nav>
+      <CalendarHeader
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+        view={view}
+        setView={setView}
+        isViewsOpen={isViewsOpen}
+        setIsViewsOpen={setIsViewsOpen}
+        setIsCommandOpen={setIsCommandOpen}
+        setIsSettingsOpen={setIsSettingsOpen}
+        setPopoverPosition={setPopoverPosition}
+        viewsContainerRef={viewsContainerRef}
+      />
 
       <main className="main-stage">
         {view === 'month' && (
-          <div className="calendar-grid">
-            <div className="grid-cols">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="grid-label">{day}</div>
-              ))}
-            </div>
-
-            <div className="days-matrix">
-              {calendarDays.map((day) => {
-                const dayEvents = events.filter((e: CalendarEvent) => isSameDay(e.start, day))
-                const isCurrMonth = isSameMonth(day, monthStart)
-                const isTday = isToday(day)
-
-                return (
-                  <div
-                    key={day.toString()}
-                    className={`day-box ${!isCurrMonth ? 'off-month' : ''} ${isTday ? 'today' : ''}`}
-                    onClick={() => {
-                      setModalDateContext(day)
-                      setIsEventModalOpen(true)
-                    }}
-                  >
-                    <div className="day-gravity-tint" />
-
-                    <span className="day-num">{format(day, 'd')}</span>
-                    <div className="event-list" style={{ marginTop: '8px', position: 'relative', zIndex: 2 }}>
-                      {dayEvents.map((event: CalendarEvent) => (
-                        <motion.div
-                          key={event.id}
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`event-chip type-${event.type} ${event.isGoal && !event.confirmed ? 'ghost-goal' : ''}`}
-                          style={{ marginBottom: '4px', cursor: event.isGoal && !event.confirmed ? 'alias' : 'pointer' }}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (event.isGoal && !event.confirmed) {
-                              setEvents(prev => prev.map(ev => ev.id === event.id ? { ...ev, confirmed: true } : ev))
-                            } else {
-                              setSelectedEvent(event)
-                            }
-                          }}
-                        >
-                          {event.isGoal && !event.confirmed && <span className="goal-indicator">✦</span>}
-                          {event.title}
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {view === 'schedule' && (
-          <div className="schedule-view">
-            {groupedEvents.map(({ date, events: dayEvents }: { date: Date, events: CalendarEvent[] }) => (
-              <div key={date.toString()} className="schedule-day">
-                <div className="schedule-date">
-                  <div className="date-large">{format(date, 'd')}</div>
-                  <div className="date-sub">{format(date, 'EEEE')}</div>
-                </div>
-
-                <div className="schedule-events">
-                  {dayEvents.map((event: CalendarEvent) => (
-                    <motion.div
-                      key={event.id}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="schedule-item"
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedEvent(event)
-                      }}
-                    >
-                      <div className="item-time">
-                        {format(event.start, 'h:mm a')}
-                      </div>
-                      <div className="item-content">
-                        <div className="item-title">{event.title}</div>
-                        <div className="item-meta">
-                          <div className={`vibe-dot type-${event.type}`} style={{ background: `var(--${event.type}-text)` }} />
-                          {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
-                          {event.locationType === 'anywhere' && <span> • Anywhere</span>}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <MonthView
+            currentDate={currentDate}
+            events={events}
+            monthStart={monthStart}
+            calendarDays={calendarDays}
+            setPopoverPosition={setPopoverPosition}
+            setModalDateContext={setModalDateContext}
+            setIsEventModalOpen={setIsEventModalOpen}
+            setSelectedEvent={setSelectedEvent}
+            setEvents={setEvents}
+            settings={settings}
+            resolveConflicts={resolveConflicts}
+          />
         )}
 
         {view === 'week' && (
-          <div className="week-grid">
-            <div className="grid-cols">
-              {weekDays.map(day => (
-                <div key={day.toString()} className={`grid-label ${isToday(day) ? 'today-label' : ''}`}>
-                  <span className="label-day">{format(day, 'EEE')}</span>
-                  <span className="label-num">{format(day, 'd')}</span>
-                </div>
-              ))}
-            </div>
-            <div className="week-matrix">
-              {weekDays.map(day => {
-                const dayEvents = events.filter((e: CalendarEvent) => isSameDay(e.start, day))
-                return (
-                  <div
-                    key={day.toString()}
-                    className={`week-col ${isToday(day) ? 'today' : ''}`}
-                    onClick={() => {
-                      setModalDateContext(day)
-                      setIsEventModalOpen(true)
-                    }}
-                  >
-                    <div className="event-list">
-                      {dayEvents.map((event: CalendarEvent) => (
-                        <motion.div
-                          key={event.id}
-                          layoutId={event.id}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className={`event-chip type-${event.type} ${event.isGoal && !event.confirmed ? 'ghost-goal' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (event.isGoal && !event.confirmed) {
-                              setEvents(prev => prev.map(ev => ev.id === event.id ? { ...ev, confirmed: true } : ev))
-                            } else {
-                              setSelectedEvent(event)
-                            }
-                          }}
-                        >
-                          <div className="event-time">{format(event.start, 'h:mm aa')}</div>
-                          <div className="event-title">{event.title}</div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          <WeekView
+            weekDays={weekDays}
+            events={events}
+            setPopoverPosition={setPopoverPosition}
+            setModalDateContext={setModalDateContext}
+            setIsEventModalOpen={setIsEventModalOpen}
+            setSelectedEvent={setSelectedEvent}
+            setEvents={setEvents}
+            settings={settings}
+            resolveConflicts={resolveConflicts}
+          />
         )}
 
         {view === 'day' && (
-          <div className="day-grid">
-            <div className="grid-cols">
-              <div className="grid-label today-label">
-                <span className="label-day">{format(currentDate, 'EEEE')}</span>
-                <span className="label-num">{format(currentDate, 'd')}</span>
-              </div>
-            </div>
+          <DayView
+            currentDate={currentDate}
+            events={events}
+            setPopoverPosition={setPopoverPosition}
+            setModalDateContext={setModalDateContext}
+            setIsEventModalOpen={setIsEventModalOpen}
+            setSelectedEvent={setSelectedEvent}
+            setEvents={setEvents}
+            settings={settings}
+            resolveConflicts={resolveConflicts}
+          />
+        )}
 
-            <div className="day-timeline">
-              {Array.from({ length: 24 }).map((_, i) => {
-                const hourDate = setHours(startOfDay(currentDate), i)
-                const hourEvents = events.filter((e: CalendarEvent) =>
-                  isSameDay(e.start, currentDate) &&
-                  getHours(e.start) === i
-                )
-
-                return (
-                  <div
-                    key={i}
-                    className="timeline-row"
-                    onClick={() => {
-                      setModalDateContext(hourDate)
-                      setIsEventModalOpen(true)
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="row-time">{format(hourDate, 'h aa')}</div>
-                    <div className="row-content">
-                      {hourEvents.map((event: CalendarEvent) => (
-                        <motion.div
-                          key={event.id}
-                          layoutId={event.id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className={`event-chip type-${event.type} ${event.isGoal && !event.confirmed ? 'ghost-goal' : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (event.isGoal && !event.confirmed) {
-                              setEvents(prev => prev.map(ev => ev.id === event.id ? { ...ev, confirmed: true } : ev))
-                            } else {
-                              setSelectedEvent(event)
-                            }
-                          }}
-                        >
-                          <div className="event-time">{format(event.start, 'h:mm aa')}</div>
-                          <div className="event-title">{event.title}</div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+        {view === 'schedule' && (
+          <ScheduleView
+            groupedEvents={groupedEvents}
+            setPopoverPosition={setPopoverPosition}
+            setSelectedEvent={setSelectedEvent}
+          />
         )}
       </main>
 
-      <AnimatePresence>
-        {isCommandOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="command-overlay"
-            onClick={() => setIsCommandOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 40 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 40 }}
-              className="command-bar"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="command-input-container">
-                <input
-                  autoFocus
-                  type="text"
-                  className="command-input"
-                  placeholder="Design review at 10am today #focus..."
-                  value={commandInput}
-                  onChange={e => setCommandInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && commandInput) {
-                      const start = parsedPreview.date === 'Today' ? new Date() : addDays(new Date(), 1)
+      <CommandBar
+        isCommandOpen={isCommandOpen}
+        setIsCommandOpen={setIsCommandOpen}
+        commandInput={commandInput}
+        setCommandInput={setCommandInput}
+        popoverPosition={popoverPosition}
+        parsedPreview={parsedPreview}
+        onEnter={handleCreateEvent}
+      />
 
-                      const createEvent = (isGoal = false) => {
-                        const newEvent: CalendarEvent = {
-                          id: Math.random().toString(),
-                          title: parsedPreview.title,
-                          start: start,
-                          end: new Date(start.getTime() + 60 * 60 * 1000),
-                          type: parsedPreview.type,
-                          isGoal,
-                          locationType: commandInput.toLowerCase().includes('anywhere') ? 'anywhere' : 'specific',
-                          confirmed: !isGoal
-                        }
-                        return newEvent
-                      }
-
-                      if (commandInput.toLowerCase().startsWith('goal') || commandInput.toLowerCase().startsWith('smart')) {
-                        const tomorrowStart = setHours(setMinutes(addDays(new Date(), 1), 0), 9)
-                        setEvents(prev => [...prev, {
-                          ...createEvent(true),
-                          start: tomorrowStart,
-                          end: setHours(tomorrowStart, 10),
-                          title: `Goal: ${parsedPreview.title}`
-                        }])
-                      } else {
-                        setEvents([...events, createEvent()])
-                      }
-
-                      setCommandInput('')
-                      setIsCommandOpen(false)
-                    }
-                  }}
-                />
-              </div>
-
-              <div className="command-preview-box">
-                <div className="preview-label">Command Preview</div>
-                <div className="preview-items">
-                  <div className="preview-item">
-                    <span className="preview-key">Event</span>
-                    <span className="preview-value" style={{ color: `var(--${parsedPreview.type}-text)` }}>{parsedPreview.title}</span>
-                  </div>
-                  <div className="preview-item">
-                    <span className="preview-key">Date</span>
-                    <span className="preview-value">{parsedPreview.date}</span>
-                  </div>
-                  <div className="preview-item">
-                    <span className="preview-key">Tag</span>
-                    <span className={`event-chip type-${parsedPreview.type}`} style={{ fontSize: '10px', padding: '4px 10px' }}>
-                      {parsedPreview.type}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="command-footer">
-                <div className="shortcut-hint"><span className="key-cap">n</span> New Event</div>
-                <div className="shortcut-hint"><span className="key-cap">#</span> Tag</div>
-                <div className="shortcut-hint"><span className="key-cap">esc</span> Close</div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isEventModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="command-overlay"
-            onClick={() => setIsEventModalOpen(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="command-palette"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="command-header">
-                <div className="command-prompt">
-                  <span className="prompt-symbol">→</span>
-                  <input
-                    autoFocus
-                    type="text"
-                    placeholder="E.g., Design Review with Sarah tomorrow at 2pm #social..."
-                    className="command-input"
-                    value={commandInput}
-                    onChange={(e) => setCommandInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && commandInput.trim()) {
-                        const newEvent: CalendarEvent = {
-                          id: Math.random().toString(),
-                          title: parsedPreview.title,
-                          start: modalDateContext ? setHours(modalDateContext, 10) : new Date(),
-                          end: modalDateContext ? setHours(modalDateContext, 11) : setHours(new Date(), getHours(new Date()) + 1),
-                          type: parsedPreview.type,
-                          isGoal: commandInput.toLowerCase().startsWith('goal:'),
-                          confirmed: !commandInput.toLowerCase().startsWith('goal:')
-                        }
-                        setEvents([...events, newEvent])
-                        setCommandInput('')
-                        setIsEventModalOpen(false)
-                      }
-                      if (e.key === 'Escape') {
-                        setIsEventModalOpen(false)
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="command-preview-box" style={{ background: '#fcfcfc' }}>
-                <div className="preview-label" style={{ color: 'var(--muted)' }}>
-                  {modalDateContext ? format(modalDateContext, 'EEEE, MMMM do yyyy') : 'Event Context'}
-                </div>
-                <div className="preview-items">
-                  <div className="preview-item">
-                    <span className="preview-key">Event</span>
-                    <span className="preview-value" style={{ color: `var(--${parsedPreview.type}-text)` }}>{parsedPreview.title}</span>
-                  </div>
-                  <div className="preview-item">
-                    <span className="preview-key">Context</span>
-                    <span className="preview-value">
-                      {modalDateContext ? (
-                        view === 'day'
-                          ? format(modalDateContext, 'h:mm a')
-                          : format(modalDateContext, 'MMM do, yyyy')
-                      ) : 'Selected Slot'}
-                    </span>
-                  </div>
-                  <div className="preview-item">
-                    <span className="preview-key">Tag</span>
-                    <span className={`event-chip type-${parsedPreview.type}`} style={{ fontSize: '10px', padding: '4px 10px' }}>
-                      {parsedPreview.type}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* NEW: Event Details Overlay */}
-      <AnimatePresence>
-        {selectedEvent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="command-overlay"
-            onClick={() => setSelectedEvent(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="command-palette"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="event-details-header" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 800, letterSpacing: '-0.03em', color: `var(--${selectedEvent.type}-text)` }}>
-                  {selectedEvent.title}
-                </h2>
-                <div style={{ color: 'var(--muted)', fontSize: '14px', fontWeight: 500 }}>
-                  {format(selectedEvent.start, 'EEEE, MMMM do, yyyy')}
-                </div>
-              </div>
-
-              <div className="command-preview-box" style={{ background: '#fcfcfc' }}>
-                <div className="preview-items">
-                  <div className="preview-item">
-                    <span className="preview-key">Time</span>
-                    <span className="preview-value">
-                      {format(selectedEvent.start, 'h:mm a')} – {format(selectedEvent.end, 'h:mm a')}
-                    </span>
-                  </div>
-                  {selectedEvent.location && (
-                    <div className="preview-item">
-                      <span className="preview-key">Location</span>
-                      <span className="preview-value">{selectedEvent.location}</span>
-                    </div>
-                  )}
-                  <div className="preview-item">
-                    <span className="preview-key">Tag</span>
-                    <span className={`event-chip type-${selectedEvent.type}`} style={{ fontSize: '10px', padding: '4px 10px', display: 'inline-block' }}>
-                      {selectedEvent.type}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="command-footer">
-                <div className="shortcut-hint"><span className="key-cap">esc</span> Close</div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Settings and Event Modal logic would also be extracted or kept clean here */}
+      <div style={{ position: 'fixed', bottom: 20, right: 20 }}>
+        <button onClick={() => signOut()} className="text-btn muted" style={{ fontSize: '12px' }}>Sign Out</button>
+      </div>
     </div>
   )
 }

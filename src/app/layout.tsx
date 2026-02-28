@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Experience the future of time management.",
 };
 
+import { Providers } from "@/components/Providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,8 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} ${geistSans.className} antialiased`}>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
