@@ -1,7 +1,5 @@
 # BetterCal
 
-**An AI-powered calendar built to help you take back your day.**
-
 BetterCal bridges the gap between your fixed appointments and your personal goals. It intelligently identifies open slots in your schedule to ensure your most important work actually gets done.
 
 ### Key Features
