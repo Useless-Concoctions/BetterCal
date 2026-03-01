@@ -358,8 +358,10 @@ body {
   border-right: none;
 }
 
-.day-box:hover {
+.day-box:hover,
+.day-box.drag-over {
   background: #fbfbfb;
+  border: 1px solid var(--foreground);
 }
 
 .day-box:hover .day-num {
@@ -662,6 +664,8 @@ body {
   align-items: center;
   gap: 32px;
   border-top: 1px solid var(--border);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .shortcut-hint {
@@ -1368,9 +1372,6 @@ body {
   /* --blue-text */
 }
 
-.bare-input.dnd-input {
-  color: var(--rose-text);
-}
 
 .bare-separator {
   font-size: 12px;

@@ -27,6 +27,8 @@ import { WeekView } from '../components/calendar/WeekView'
 import { DayView } from '../components/calendar/DayView'
 import { ScheduleView } from '../components/calendar/ScheduleView'
 import { CommandBar } from '../components/calendar/CommandBar'
+import { SettingsModal } from '../components/calendar/SettingsModal'
+import { EventPopover } from '../components/calendar/EventPopover'
 
 import './globals.css'
 
@@ -57,14 +59,32 @@ export default function CalendarPage() {
   const [settings, setSettings] = useState<IntelligentSettings>(DEFAULT_SETTINGS)
   const viewsContainerRef = useRef<HTMLDivElement>(null)
 
-  // Fetch events on mount and when session changes
+  // Fetch events on mount and when session/guest status changes
   useEffect(() => {
     if (session?.user?.id) {
       getEvents(session.user.id).then(data => {
         setEvents(resolveConflicts(data as CalendarEvent[], settings))
       })
+    } else {
+      // Always treat as guest if not logged in
+      const savedEvents = localStorage.getItem('bettercal_guest_events')
+      if (savedEvents) {
+        try {
+          const parsed = JSON.parse(savedEvents)
+          setEvents(resolveConflicts(parsed.map((e: any) => ({ ...e, start: new Date(e.start), end: new Date(e.end) })), settings))
+        } catch (e) {
+          console.error("Failed to parse guest events", e)
+        }
+      }
     }
   }, [session, settings])
+
+  // Persist local events when not logged in
+  useEffect(() => {
+    if (!session) {
+      localStorage.setItem('bettercal_guest_events', JSON.stringify(events))
+    }
+  }, [events, session])
 
   // Persist settings
   useEffect(() => {
@@ -139,26 +159,59 @@ export default function CalendarPage() {
   }, [commandInput, modalDateContext])
 
   const handleCreateEvent = async () => {
-    if (!parsedPreview || !session?.user?.id) return
+    if (!parsedPreview) return
 
-    const title = parsedPreview.title
+    const title = parsedPreview.isGoal ? `Goal: ${parsedPreview.title}` : parsedPreview.title
     const emoji = selectedCustomEmoji || getEmojiForTitle(title)
 
-    await createEvent(session.user.id, {
-      title: parsedPreview.isGoal ? `Goal: ${title}` : title,
-      start: parsedPreview.start,
-      end: new Date(parsedPreview.start.getTime() + parsedPreview.duration * 60 * 1000),
-      isGoal: parsedPreview.isGoal,
-      confirmed: !parsedPreview.isGoal,
+    const baseEventData = {
+      title,
       emoji,
       duration: parsedPreview.duration,
       preferredTime: parsedPreview.preferredTime,
-      frequency: parsedPreview.frequency
-    })
+      frequency: parsedPreview.frequency,
+      isGoal: parsedPreview.isGoal,
+      confirmed: !parsedPreview.isGoal,
+    }
+
+    const instances = []
+    const numInstances = parsedPreview.frequency === 'daily' ? 7 : (parsedPreview.frequency === 'weekly' ? 4 : 1)
+
+    for (let i = 0; i < numInstances; i++) {
+      const start = i === 0 ? parsedPreview.start : (
+        parsedPreview.frequency === 'daily' ? addDays(parsedPreview.start, i) : addDays(parsedPreview.start, i * 7)
+      )
+      instances.push({
+        ...baseEventData,
+        start,
+        end: new Date(start.getTime() + parsedPreview.duration * 60 * 1000),
+      })
+    }
+
+    if (session?.user?.id) {
+      for (const inst of instances) {
+        await createEvent(session.user.id, inst)
+      }
+    } else {
+      const guestEvents: CalendarEvent[] = instances.map(inst => ({
+        ...inst,
+        id: Math.random().toString(36).substr(2, 9),
+      }))
+      setEvents(prev => resolveConflicts([...prev, ...guestEvents], settings))
+    }
 
     setCommandInput('')
     setIsCommandOpen(false)
     setIsEventModalOpen(false)
+  }
+
+  const handleDeleteEvent = async (id: string) => {
+    if (session?.user?.id) {
+      await deleteEvent(id)
+    } else {
+      setEvents(prev => prev.filter(ev => ev.id !== id))
+    }
+    setSelectedEvent(null)
   }
 
   const monthStart = startOfMonth(currentDate)
@@ -188,17 +241,6 @@ export default function CalendarPage() {
       .sort((a, b) => a.date.getTime() - b.date.getTime())
   }, [events])
 
-  if (!session) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '20px' }}>
-        <h1 className="logo-text">BetterCal</h1>
-        <button onClick={() => signIn()} className="text-btn bold" style={{ padding: '12px 24px', border: '1px solid var(--border)', borderRadius: '12px' }}>
-          Sign In to Start
-        </button>
-      </div>
-    )
-  }
-
   return (
     <div className="app-wrapper">
       <CalendarHeader
@@ -212,6 +254,7 @@ export default function CalendarPage() {
         setIsSettingsOpen={setIsSettingsOpen}
         setPopoverPosition={setPopoverPosition}
         viewsContainerRef={viewsContainerRef}
+        session={session}
       />
 
       <main className="main-stage">
@@ -228,6 +271,7 @@ export default function CalendarPage() {
             setEvents={setEvents}
             settings={settings}
             resolveConflicts={resolveConflicts}
+            isGuest={!session}
           />
         )}
 
@@ -278,9 +322,30 @@ export default function CalendarPage() {
         onEnter={handleCreateEvent}
       />
 
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        setIsOpen={setIsSettingsOpen}
+        settings={settings}
+        setSettings={setSettings}
+        popoverPosition={popoverPosition}
+      />
+
+      {selectedEvent && (
+        <EventPopover
+          event={selectedEvent}
+          popoverPosition={popoverPosition}
+          onClose={() => setSelectedEvent(null)}
+          onDelete={handleDeleteEvent}
+        />
+      )}
+
       {/* Settings and Event Modal logic would also be extracted or kept clean here */}
       <div style={{ position: 'fixed', bottom: 20, right: 20 }}>
-        <button onClick={() => signOut()} className="text-btn muted" style={{ fontSize: '12px' }}>Sign Out</button>
+        {session ? (
+          <button onClick={() => signOut()} className="text-btn muted" style={{ fontSize: '12px' }}>Sign Out</button>
+        ) : (
+          <button onClick={() => signIn()} className="text-btn muted" style={{ fontSize: '12px' }}>Sign In</button>
+        )}
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
 import React from 'react'
-import { format, isSameMonth, isSameDay, isToday, addDays } from 'date-fns'
+import { format, isSameMonth, isSameDay, isToday, addDays, differenceInDays } from 'date-fns'
+import { updateEvent } from '../../lib/actions'
 import { CalendarEvent } from '../../lib/calendar-utils'
 
 interface MonthViewProps {
@@ -14,6 +15,7 @@ interface MonthViewProps {
     setEvents: (fn: (prev: CalendarEvent[]) => CalendarEvent[]) => void
     settings: any
     resolveConflicts: any
+    isGuest: boolean
 }
 
 export const MonthView: React.FC<MonthViewProps> = ({
@@ -27,8 +29,46 @@ export const MonthView: React.FC<MonthViewProps> = ({
     setSelectedEvent,
     setEvents,
     settings,
-    resolveConflicts
+    resolveConflicts,
+    isGuest
 }) => {
+    const handleDragStart = (e: React.DragEvent, event: CalendarEvent) => {
+        e.dataTransfer.setData('eventId', event.id)
+        e.dataTransfer.effectAllowed = 'move'
+    }
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        e.currentTarget.classList.add('drag-over')
+    }
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.currentTarget.classList.remove('drag-over')
+    }
+
+    const handleDrop = async (e: React.DragEvent, targetDay: Date) => {
+        e.preventDefault()
+        e.currentTarget.classList.remove('drag-over')
+        const eventId = e.dataTransfer.getData('eventId')
+        const event = events.find(ev => ev.id === eventId)
+
+        if (event && !isSameDay(event.start, targetDay)) {
+            const diffDays = differenceInDays(targetDay, event.start)
+            const newStart = addDays(event.start, diffDays)
+            const newEnd = addDays(event.end, diffDays)
+
+            if (isGuest) {
+                setEvents(prev => resolveConflicts(prev.map(ev =>
+                    ev.id === eventId ? { ...ev, start: newStart, end: newEnd } : ev
+                ), settings))
+            } else {
+                await updateEvent(eventId, { start: newStart, end: newEnd })
+                // The revalidatePath in the server action will trigger a refresh for logged-in users
+            }
+        }
+    }
+
     return (
         <div className="calendar-grid">
             <div className="grid-cols">
@@ -55,6 +95,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
                                 setModalDateContext(day)
                                 setIsEventModalOpen(true)
                             }}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, day)}
                         >
                             <div className="day-gravity-tint" />
 
@@ -70,6 +113,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
                                         key={event.id}
                                         className={`event-chip ${event.isGoal && !event.confirmed ? 'ghost-goal' : ''}`}
                                         style={{ marginBottom: '4px' }}
+                                        draggable={!event.isGoal || event.confirmed}
+                                        onDragStart={(e) => handleDragStart(e, event)}
                                         onClick={(e: React.MouseEvent) => {
                                             e.stopPropagation()
                                             if (event.isGoal && !event.confirmed) {

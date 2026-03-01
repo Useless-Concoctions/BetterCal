@@ -42,10 +42,10 @@ export const CommandBar: React.FC<CommandBarProps> = ({
                             top: popoverPosition ? popoverPosition.y + popoverPosition.height + 8 : '15vh',
                             left: popoverPosition
                                 ? (typeof window !== 'undefined' && popoverPosition.x > window.innerWidth / 2
-                                    ? Math.max(20, popoverPosition.x - 320 + popoverPosition.width)
-                                    : Math.min(typeof window !== 'undefined' ? window.innerWidth - 320 : 1000, popoverPosition.x))
-                                : (typeof window !== 'undefined' ? window.innerWidth / 2 - 160 : 'calc(50% - 160px)'),
-                            width: 320,
+                                    ? Math.max(20, popoverPosition.x - 340 + popoverPosition.width + 20)
+                                    : Math.min(typeof window !== 'undefined' ? window.innerWidth - 340 : 1000, popoverPosition.x + 20))
+                                : (typeof window !== 'undefined' ? window.innerWidth / 2 - 170 : 'calc(50% - 170px)'),
+                            width: 340,
                             padding: '0'
                         }}
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}

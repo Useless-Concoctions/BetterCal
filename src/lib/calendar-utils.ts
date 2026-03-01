@@ -100,14 +100,14 @@ export interface IntelligentSettings {
     morning: { start: number, end: number }
     afternoon: { start: number, end: number }
     evening: { start: number, end: number }
-    dnd: { start: number, end: number } // e.g. 22 to 7
+    quietHours: { start: number, end: number } // e.g. 22 to 7
 }
 
 export const DEFAULT_SETTINGS: IntelligentSettings = {
     morning: { start: 6, end: 12 },
     afternoon: { start: 12, end: 18 },
     evening: { start: 18, end: 24 },
-    dnd: { start: 22, end: 7 }
+    quietHours: { start: 22, end: 7 }
 }
 
 /**
@@ -130,40 +130,40 @@ export function resolveConflicts(allEvents: CalendarEvent[], settings: Intellige
             ({ start: startHour, end: endHour } = settings.evening)
         }
 
-        // We wrap the slot finding in a way that respects DND
-        const findSlotWithDND = (date: Date, dur: number, currentEvents: CalendarEvent[]): Date => {
+        // We wrap the slot finding in a way that respects Quiet Hours
+        const findSlotWithQuietHours = (date: Date, dur: number, currentEvents: CalendarEvent[]): Date => {
             let candidate = findFirstAvailableSlot(date, dur, currentEvents, startHour, endHour)
 
-            // Basic DND check - if the slot starts or ends during DND, we need a better check
-            // For now, let's just ensure startHour and endHour don't overlap with DND in the simple case.
-            // A more robust implementation would check every 15m block against the DND range.
+            // Basic Quiet Hours check - if the slot starts or ends during Quiet Hours, we need a better check
+            // For now, let's just ensure startHour and endHour don't overlap with Quiet Hours in the simple case.
+            // A more robust implementation would check every 15m block against the Quiet Hours range.
             return candidate
         }
 
         const duration = goal.duration || 60
         const newStart = findFirstAvailableSlot(goal.start, duration, resolved, startHour, endHour)
 
-        // Final sanity check: if the newStart is within DND, we'll try to push it past DND end
+        // Final sanity check: if the newStart is within Quiet Hours, we'll try to push it past Quiet Hours end
         let finalStart = newStart
         const startHr = getHours(finalStart)
 
-        // Simple DND logic: if 10pm-7am
-        const isDND = (hr: number) => {
-            if (settings.dnd.start > settings.dnd.end) {
-                return hr >= settings.dnd.start || hr < settings.dnd.end
+        // Simple Quiet Hours logic: if 10pm-7am
+        const isQuietHours = (hr: number) => {
+            if (settings.quietHours.start > settings.quietHours.end) {
+                return hr >= settings.quietHours.start || hr < settings.quietHours.end
             }
-            return hr >= settings.dnd.start && hr < settings.dnd.end
+            return hr >= settings.quietHours.start && hr < settings.quietHours.end
         }
 
-        if (isDND(startHr)) {
-            // Push to end of DND on that day (or next)
-            let parsedDndEndDay = finalStart;
-            // If DND spans midnight (e.g. 22 to 7) and current hour is >= 22, the end is tomorrow
-            if (settings.dnd.start > settings.dnd.end && startHr >= settings.dnd.start) {
-                parsedDndEndDay = addHours(finalStart, 24);
+        if (isQuietHours(startHr)) {
+            // Push to end of Quiet Hours on that day (or next)
+            let parsedQuietHoursEndDay = finalStart;
+            // If Quiet Hours spans midnight (e.g. 22 to 7) and current hour is >= 22, the end is tomorrow
+            if (settings.quietHours.start > settings.quietHours.end && startHr >= settings.quietHours.start) {
+                parsedQuietHoursEndDay = addHours(finalStart, 24);
             }
-            const dndEndDate = setMinutes(setHours(parsedDndEndDay, settings.dnd.end), 0)
-            finalStart = findFirstAvailableSlot(dndEndDate, duration, resolved, startHour, endHour)
+            const quietHoursEndDate = setMinutes(setHours(parsedQuietHoursEndDay, settings.quietHours.end), 0)
+            finalStart = findFirstAvailableSlot(quietHoursEndDate, duration, resolved, startHour, endHour)
         }
 
         const newEnd = addMinutes(finalStart, duration)

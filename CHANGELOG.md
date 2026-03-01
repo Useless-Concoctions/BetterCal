@@ -2,6 +2,10 @@
 
 All notable changes to **BetterCal** will be documented in this file.
 
+## [Unreleased]
+### Added
+- 
+
 ## [0.4.0] - 2026-02-28
 ### Added
 - **Local-First Migration**: Removed the "Guest Mode" landing page modal. The app is now usable immediately, with data persisting to `localStorage` by default if not signed in.

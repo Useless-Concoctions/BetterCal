@@ -1,6 +1,7 @@
 import React from 'react'
 import { format, subMonths, addMonths } from 'date-fns'
-import { Plus, Settings, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Settings, RefreshCw, ChevronLeft, ChevronRight, Calendar, Columns, Square, List } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { signIn, signOut } from 'next-auth/react'
 import { syncGoogleAction } from "../../lib/actions"
 
@@ -64,13 +65,44 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                         Calendar
                     </div>
 
-                    <div ref={viewsContainerRef} className="nav-link-container" style={{ display: 'flex', alignItems: 'baseline' }}>
+                    <div ref={viewsContainerRef} className="nav-link-container" style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
                         <div
-                            className={`nav-link`}
+                            className={`nav-link ${isViewsOpen ? 'active' : ''}`}
                             onClick={() => setIsViewsOpen(!isViewsOpen)}
                         >
                             Views
                         </div>
+
+                        <AnimatePresence>
+                            {isViewsOpen && (
+                                <motion.div
+                                    style={{ display: 'flex', alignItems: 'baseline', gap: '16px', overflow: 'hidden' }}
+                                    initial={{ width: 0, opacity: 0 }}
+                                    animate={{ width: 'auto', opacity: 1 }}
+                                    exit={{ width: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                >
+                                    <div
+                                        className={`nav-link ${view === 'month' ? 'active' : ''}`}
+                                        onClick={() => setView('month')}
+                                    >
+                                        Month
+                                    </div>
+                                    <div
+                                        className={`nav-link ${view === 'week' ? 'active' : ''}`}
+                                        onClick={() => setView('week')}
+                                    >
+                                        Week
+                                    </div>
+                                    <div
+                                        className={`nav-link ${view === 'day' ? 'active' : ''}`}
+                                        onClick={() => setView('day')}
+                                    >
+                                        Day
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     <div
@@ -107,29 +139,31 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                             </button>
                         )}
 
-                        <div
-                            id="plus-btn"
-                            className="plus-btn"
-                            onClick={(e: React.MouseEvent) => {
-                                const rect = e.currentTarget.getBoundingClientRect()
-                                setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
-                                setIsCommandOpen(true)
-                            }}
-                            style={{ cursor: 'pointer', opacity: 0.4, display: 'flex', alignItems: 'center', color: 'var(--foreground)' }}
-                        >
-                            <Plus size={14} strokeWidth={3} />
-                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div
+                                id="plus-btn"
+                                className="plus-btn"
+                                onClick={(e: React.MouseEvent) => {
+                                    const rect = e.currentTarget.getBoundingClientRect()
+                                    setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+                                    setIsCommandOpen(true)
+                                }}
+                                style={{ cursor: 'pointer', opacity: 0.4, display: 'flex', alignItems: 'center', color: 'var(--foreground)' }}
+                            >
+                                <Plus size={14} strokeWidth={3} />
+                            </div>
 
-                        <div
-                            className="intelligence-btn"
-                            onClick={(e: React.MouseEvent) => {
-                                const rect = e.currentTarget.getBoundingClientRect()
-                                setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
-                                setIsSettingsOpen(true)
-                            }}
-                            style={{ cursor: 'pointer', opacity: 0.4, display: 'flex', alignItems: 'center', color: 'var(--foreground)' }}
-                        >
-                            <Settings size={14} strokeWidth={3} />
+                            <div
+                                className="intelligence-btn"
+                                onClick={(e: React.MouseEvent) => {
+                                    const rect = e.currentTarget.getBoundingClientRect()
+                                    setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+                                    setIsSettingsOpen(true)
+                                }}
+                                style={{ cursor: 'pointer', opacity: 0.4, display: 'flex', alignItems: 'center', color: 'var(--foreground)' }}
+                            >
+                                <Settings size={14} strokeWidth={3} />
+                            </div>
                         </div>
 
                         {session ? (
