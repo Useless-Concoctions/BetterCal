@@ -9,13 +9,15 @@ interface EventPopoverProps {
     popoverPosition: { x: number, y: number, width: number, height: number } | null
     onClose: () => void
     onDelete: (id: string) => void
+    onConfirm: (id: string) => void
 }
 
 export const EventPopover: React.FC<EventPopoverProps> = ({
     event,
     popoverPosition,
     onClose,
-    onDelete
+    onDelete,
+    onConfirm
 }) => {
     if (!popoverPosition) return null
 
@@ -77,7 +79,28 @@ export const EventPopover: React.FC<EventPopoverProps> = ({
                             </div>
                         )}
 
-                        <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+                        <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end', gap: '12px', alignItems: 'center' }}>
+                            {event.isGoal && !event.confirmed && (
+                                <button
+                                    onClick={() => onConfirm(event.id)}
+                                    className="confirm-btn"
+                                    style={{
+                                        background: 'var(--green-bg, #e6f4ea)',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        color: 'var(--green-text, #1e8e3e)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                        padding: '4px 8px'
+                                    }}
+                                >
+                                    Confirm
+                                </button>
+                            )}
                             <button
                                 onClick={() => onDelete(event.id)}
                                 style={{

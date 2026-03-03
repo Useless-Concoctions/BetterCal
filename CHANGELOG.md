@@ -2,6 +2,16 @@
 
 All notable changes to **BetterCal** will be documented in this file.
 
+## [0.5.0] - 2026-03-03
+### Added
+- **Smart Goal Confirmation**: Added a "Confirm" button to the `EventPopover` for ghost slots, enabling users to solidify predictive goals into permanent events.
+- **Tauri DX**: Added `tauri`, `desktop:dev`, and `desktop:build` scripts to `package.json` for easier desktop development and builds.
+
+### Changed
+- **Unified Goal Persistence**: Merged the `Goal` model into the `Event` model in `prisma/schema.prisma`. Added `isGoal`, `confirmed`, `frequency`, `preferredTime`, and `duration` fields to the `Event` model.
+- **Server Actions Refactor**: Updated `createEvent`, `updateEvent`, and `syncGoogleAction` to support unified goal persistence and removed redundant `getGoals` and `createGoal` actions.
+- **Ghost Slot Management**: Simplified the state management for Smart Goals by using a single database table for both confirmed events and predictive slots.
+
 ## [0.4.0] - 2026-02-28
 ### Added
 - **Local-First Migration**: Removed the "Guest Mode" landing page modal. The app is now usable immediately, with data persisting to `localStorage` by default if not signed in.

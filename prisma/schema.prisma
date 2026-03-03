@@ -45,7 +45,6 @@ model User {
   accounts      Account[]
   sessions      Session[]
   events        Event[]
-  goals         Goal[]
 }
 
 model Event {
@@ -57,24 +56,18 @@ model Event {
   locationType String?   @default("specific") // "anywhere" | "specific"
   emoji        String?
   source       String?   @default("personal")
+  isGoal       Boolean   @default(false)
+  confirmed    Boolean   @default(true)
+  frequency    String?   // "daily" | "weekly" | "monthly"
+  preferredTime String?  // "morning" | "afternoon" | "evening"
+  duration     Int?      // duration in minutes
   userId       String
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }
 
-model Goal {
-  id            String    @id @default(cuid())
-  title         String
-  duration      Int       @default(60)
-  preferredTime String?   // "morning" | "afternoon" | "evening"
-  frequency     String?   // "daily" | "weekly" | "monthly"
-  emoji         String?
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
+// Goal model is merged into Event model for now
 
 model VerificationToken {
   identifier String

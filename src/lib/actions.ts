@@ -22,6 +22,11 @@ export async function createEvent(userId: string, event: Omit<CalendarEvent, 'id
             locationType: event.locationType,
             emoji: event.emoji,
             source: event.source,
+            isGoal: event.isGoal ?? false,
+            confirmed: event.confirmed ?? true,
+            frequency: event.frequency,
+            preferredTime: event.preferredTime,
+            duration: event.duration,
         }
     })
     revalidatePath('/')
@@ -38,6 +43,7 @@ export async function updateEvent(id: string, event: Partial<CalendarEvent>) {
             location: event.location,
             locationType: event.locationType,
             emoji: event.emoji,
+            confirmed: event.confirmed,
         }
     })
     revalidatePath('/')
@@ -51,26 +57,7 @@ export async function deleteEvent(id: string) {
     revalidatePath('/')
 }
 
-export async function getGoals(userId: string) {
-    return await prisma.goal.findMany({
-        where: { userId }
-    })
-}
-
-export async function createGoal(userId: string, goal: any) {
-    const newGoal = await prisma.goal.create({
-        data: {
-            userId,
-            title: goal.title,
-            duration: goal.duration,
-            preferredTime: goal.preferredTime,
-            frequency: goal.frequency,
-            emoji: goal.emoji,
-        }
-    })
-    revalidatePath('/')
-    return newGoal
-}
+// Goal functions are now unified into Event functions
 
 import { syncGoogleCalendar } from './google-calendar'
 
@@ -91,7 +78,13 @@ export async function syncGoogleAction(userId: string) {
             await prisma.event.create({
                 data: {
                     userId,
-                    ...event
+                    title: event.title,
+                    start: event.start,
+                    end: event.end,
+                    location: event.location,
+                    locationType: event.locationType,
+                    emoji: event.emoji,
+                    source: event.source,
                 }
             })
         }

@@ -214,6 +214,18 @@ export default function CalendarPage() {
     setSelectedEvent(null)
   }
 
+  const handleConfirmEvent = async (id: string) => {
+    if (session?.user?.id) {
+      await updateEvent(id, { confirmed: true })
+      // Logic to refresh events after server action
+      const updated = await getEvents(session.user.id)
+      setEvents(resolveConflicts(updated as CalendarEvent[], settings))
+    } else {
+      setEvents(prev => resolveConflicts(prev.map(ev => ev.id === id ? { ...ev, confirmed: true } : ev), settings))
+    }
+    setSelectedEvent(null)
+  }
+
   const monthStart = startOfMonth(currentDate)
   const startDate = startOfWeek(monthStart)
   const calendarDays = Array.from({ length: 42 }).map((_, i) => addDays(startDate, i))
@@ -336,6 +348,7 @@ export default function CalendarPage() {
           popoverPosition={popoverPosition}
           onClose={() => setSelectedEvent(null)}
           onDelete={handleDeleteEvent}
+          onConfirm={handleConfirmEvent}
         />
       )}
 
