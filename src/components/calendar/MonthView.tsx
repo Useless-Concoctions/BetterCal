@@ -16,6 +16,7 @@ interface MonthViewProps {
     settings: any
     resolveConflicts: any
     isGuest: boolean
+    weatherData?: any
 }
 
 export const MonthView: React.FC<MonthViewProps> = ({
@@ -30,7 +31,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
     setEvents,
     settings,
     resolveConflicts,
-    isGuest
+    isGuest,
+    weatherData
 }) => {
     const handleDragStart = (e: React.DragEvent, event: CalendarEvent) => {
         e.dataTransfer.setData('eventId', event.id)
@@ -61,7 +63,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
             if (isGuest) {
                 setEvents(prev => resolveConflicts(prev.map(ev =>
                     ev.id === eventId ? { ...ev, start: newStart, end: newEnd } : ev
-                ), settings))
+                ), settings, weatherData))
             } else {
                 await updateEvent(eventId, { start: newStart, end: newEnd })
                 // The revalidatePath in the server action will trigger a refresh for logged-in users
@@ -118,7 +120,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                                         onClick={(e: React.MouseEvent) => {
                                             e.stopPropagation()
                                             if (event.isGoal && !event.confirmed) {
-                                                setEvents(prev => resolveConflicts(prev.map(ev => ev.id === event.id ? { ...ev, confirmed: true } : ev), settings))
+                                                setEvents(prev => resolveConflicts(prev.map(ev => ev.id === event.id ? { ...ev, confirmed: true } : ev), settings, weatherData))
                                             } else {
                                                 const rect = e.currentTarget.getBoundingClientRect()
                                                 setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })

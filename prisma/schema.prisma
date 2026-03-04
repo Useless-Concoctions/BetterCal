@@ -59,8 +59,10 @@ model Event {
   isGoal       Boolean   @default(false)
   confirmed    Boolean   @default(true)
   frequency    String?   // "daily" | "weekly" | "monthly"
+  frequencyCount Int?    // e.g. 5 times/week
   preferredTime String?  // "morning" | "afternoon" | "evening"
   duration     Int?      // duration in minutes
+  weatherConstraint String? // "outdoor" | "clear" | "none"
   userId       String
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime  @default(now())

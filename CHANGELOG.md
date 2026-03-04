@@ -2,6 +2,20 @@
 
 All notable changes to **BetterCal** will be documented in this file.
 
+## [0.6.0] - 2026-03-03
+### Added
+- **Liquid Scheduling Engine**: Automated elasticity that flows "Ghost Goals" around fixed commitments.
+- **Weather-Aware Intelligence**: Integration with Open-Meteo to automatically reschedule `#outdoor` goals (like running) if rain or extreme temperatures are forecast.
+- **Semantic Intuition**: Automatically infers "Energy Windows" based on goal titles. High-energy tasks (Gym, Code) prefer mornings, while admin tasks prefer afternoons.
+- **Advanced Goal Definitions**: Support for complex frequencies (e.g., "5x a week") and precision durations.
+- **Intelligent Goal Suggestions**: Interactive quick-start pills in the Command Bar for common goals (Gym, Deep Work, Reading), designed to reduce friction and inspire habit building.
+- **Universal Flow Interactivity**: Full drag-and-drop support across Month, Week, and Day views.
+- **Premium Documentation**: Rebuilt README and branding to reflect the "Liquid Scheduling" philosophy.
+
+### Changed
+- **Prisma Schema Upgrade**: Added `frequencyCount` to the `Event` model and performed a database migration to support advanced goal counts.
+- **Improved NLP Parser**: Refined regex handling for frequency, duration, and title cleanup to minimize "Untitled Event" glitches.
+
 ## [0.5.0] - 2026-03-03
 ### Added
 - **Smart Goal Confirmation**: Added a "Confirm" button to the `EventPopover` for ghost slots, enabling users to solidify predictive goals into permanent events.

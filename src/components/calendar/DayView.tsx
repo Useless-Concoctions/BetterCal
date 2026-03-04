@@ -1,6 +1,6 @@
-import React from 'react'
-import { format, isSameDay, setHours, startOfDay, getHours } from 'date-fns'
+import { format, isSameDay, setHours, startOfDay, getHours, setMinutes } from 'date-fns'
 import { CalendarEvent } from '../../lib/calendar-utils'
+import { updateEvent } from '../../lib/actions'
 
 interface DayViewProps {
     currentDate: Date
@@ -12,6 +12,8 @@ interface DayViewProps {
     setEvents: (fn: (prev: CalendarEvent[]) => CalendarEvent[]) => void
     settings: any
     resolveConflicts: any
+    isGuest: boolean
+    weatherData?: any
 }
 
 export const DayView: React.FC<DayViewProps> = ({
@@ -23,8 +25,47 @@ export const DayView: React.FC<DayViewProps> = ({
     setSelectedEvent,
     setEvents,
     settings,
-    resolveConflicts
+    resolveConflicts,
+    isGuest,
+    weatherData
 }) => {
+    const handleDragStart = (e: React.DragEvent, event: CalendarEvent) => {
+        e.dataTransfer.setData('eventId', event.id)
+        e.dataTransfer.effectAllowed = 'move'
+    }
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        e.currentTarget.classList.add('drag-over')
+    }
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.currentTarget.classList.remove('drag-over')
+    }
+
+    const handleDrop = async (e: React.DragEvent, targetHour: Date) => {
+        e.preventDefault()
+        e.currentTarget.classList.remove('drag-over')
+        const eventId = e.dataTransfer.getData('eventId')
+        const event = events.find(ev => ev.id === eventId)
+
+        if (event) {
+            const h = getHours(targetHour)
+            const newStart = setMinutes(setHours(targetHour, h), event.start.getMinutes())
+            const duration = (event.end.getTime() - event.start.getTime())
+            const newEnd = new Date(newStart.getTime() + duration)
+
+            if (isGuest) {
+                setEvents(prev => resolveConflicts(prev.map(ev =>
+                    ev.id === eventId ? { ...ev, start: newStart, end: newEnd } : ev
+                ), settings, weatherData))
+            } else {
+                await updateEvent(eventId, { start: newStart, end: newEnd })
+            }
+        }
+    }
+
     return (
         <div className="day-grid">
             <div className="grid-cols">
@@ -52,6 +93,9 @@ export const DayView: React.FC<DayViewProps> = ({
                                 setModalDateContext(hourDate)
                                 setIsEventModalOpen(true)
                             }}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, hourDate)}
                             style={{ cursor: 'pointer' }}
                         >
                             <div className="row-time">{format(hourDate, 'h aa')}</div>
@@ -60,10 +104,12 @@ export const DayView: React.FC<DayViewProps> = ({
                                     <div
                                         key={event.id}
                                         className={`event-chip ${event.isGoal && !event.confirmed ? 'ghost-goal' : ''}`}
+                                        draggable={!event.isGoal || event.confirmed}
+                                        onDragStart={(e) => handleDragStart(e, event)}
                                         onClick={(e: React.MouseEvent) => {
                                             e.stopPropagation()
                                             if (event.isGoal && !event.confirmed) {
-                                                setEvents(prev => resolveConflicts(prev.map(ev => ev.id === event.id ? { ...ev, confirmed: true } : ev), settings))
+                                                setEvents(prev => resolveConflicts(prev.map(ev => ev.id === event.id ? { ...ev, confirmed: true } : ev), settings, weatherData))
                                             } else {
                                                 const rect = e.currentTarget.getBoundingClientRect()
                                                 setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })

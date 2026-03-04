@@ -586,6 +586,17 @@ body {
   color: var(--rose-text);
 }
 
+.suggestion-pill:hover {
+  background: var(--slate-muted) !important;
+  border-color: var(--slate-text) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.suggestion-pill:active {
+  transform: translateY(0);
+}
+
 .command-preview-box {
   padding: 32px;
   background: white;

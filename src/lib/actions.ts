@@ -25,8 +25,10 @@ export async function createEvent(userId: string, event: Omit<CalendarEvent, 'id
             isGoal: event.isGoal ?? false,
             confirmed: event.confirmed ?? true,
             frequency: event.frequency,
+            frequencyCount: event.frequencyCount,
             preferredTime: event.preferredTime,
             duration: event.duration,
+            weatherConstraint: event.weatherConstraint,
         }
     })
     revalidatePath('/')
@@ -43,7 +45,13 @@ export async function updateEvent(id: string, event: Partial<CalendarEvent>) {
             location: event.location,
             locationType: event.locationType,
             emoji: event.emoji,
+            isGoal: event.isGoal,
             confirmed: event.confirmed,
+            frequency: event.frequency,
+            frequencyCount: event.frequencyCount,
+            preferredTime: event.preferredTime,
+            duration: event.duration,
+            weatherConstraint: event.weatherConstraint,
         }
     })
     revalidatePath('/')

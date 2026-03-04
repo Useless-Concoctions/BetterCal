@@ -92,7 +92,12 @@ export const CommandBar: React.FC<CommandBarProps> = ({
                                         )}
                                         {parsedPreview.frequency && (
                                             <div className="smart-pill" style={{ textTransform: 'capitalize' }}>
-                                                🔁 {parsedPreview.frequency}
+                                                🔁 {parsedPreview.frequency}{parsedPreview.frequencyCount && parsedPreview.frequencyCount > 1 ? ` (${parsedPreview.frequencyCount}x)` : ''}
+                                            </div>
+                                        )}
+                                        {parsedPreview.weatherConstraint && parsedPreview.weatherConstraint !== 'none' && (
+                                            <div className="smart-pill" style={{ background: 'var(--accent-dim)', color: 'var(--accent)', textTransform: 'capitalize' }}>
+                                                ☁️ {parsedPreview.weatherConstraint}
                                             </div>
                                         )}
                                         {parsedPreview.isGoal && !parsedPreview.hasTime && (
@@ -104,6 +109,41 @@ export const CommandBar: React.FC<CommandBarProps> = ({
                                 )}
                             </AnimatePresence>
                         </div>
+
+                        {!commandInput.trim() && (
+                            <div className="command-suggestions" style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                <div style={{ width: '100%', fontSize: '11px', color: 'var(--text-dim)', marginBottom: '4px' }}>Quick Starts</div>
+                                {[
+                                    { text: 'Gym 3x a week', emoji: '🏃' },
+                                    { text: 'Deep Work 90m', emoji: '💻' },
+                                    { text: 'Read every night', emoji: '📖' },
+                                    { text: 'Run #outdoor', emoji: '☁️' },
+                                    { text: 'Weekly Sync', emoji: '👥' }
+                                ].map(sug => (
+                                    <button
+                                        key={sug.text}
+                                        className="suggestion-pill"
+                                        style={{
+                                            background: 'var(--bg-ghost)',
+                                            border: '1px solid var(--border)',
+                                            borderRadius: '100px',
+                                            padding: '4px 10px',
+                                            fontSize: '12px',
+                                            color: 'var(--text)',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onClick={() => setCommandInput(`Smart Goal: ${sug.text}`)}
+                                    >
+                                        <span>{sug.emoji}</span>
+                                        {sug.text}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
                         <div className="command-footer" style={{ padding: '12px 16px', gap: '16px' }}>
                             <div className="shortcut-hint" style={{ fontSize: '10px' }}><span className="key-cap" style={{ padding: '2px 4px' }}>↵</span> Create</div>

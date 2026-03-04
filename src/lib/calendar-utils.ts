@@ -9,6 +9,7 @@ import {
     addHours,
     getHours
 } from 'date-fns'
+import { getForecast, WeatherData, isWeatherSuitable } from './weather-utils'
 
 export interface CalendarEvent {
     id: string
@@ -20,26 +21,21 @@ export interface CalendarEvent {
     isGoal?: boolean
     confirmed?: boolean
     frequency?: 'daily' | 'weekly' | 'monthly'
+    frequencyCount?: number
     preferredTime?: 'morning' | 'afternoon' | 'evening'
     source?: 'personal' | 'work' | 'shared'
     emoji?: string
     duration?: number
+    weatherConstraint?: string
 }
-
-/**
- * Finds the first available slot of a given duration on a specific day.
- * @param date The date to search on.
- * @param durationMinutes Length of the slot.
- * @param existingEvents Current events to avoid.
- * @param startHour When to start looking (default 0 for any time).
- * @param endHour when to stop looking (default 23).
- */
 export function findFirstAvailableSlot(
     date: Date,
     durationMinutes: number,
     existingEvents: CalendarEvent[],
     startHour: number = 0,
-    endHour: number = 23
+    endHour: number = 23,
+    weather: WeatherData | null = null,
+    weatherConstraint?: string
 ): Date {
     // If the provided date is today and its time is already past startHour, use the provided date's time
     let searchStart = setMinutes(setHours(startOfDay(date), startHour), 0)
@@ -80,7 +76,13 @@ export function findFirstAvailableSlot(
         )
 
         if (!conflictingEvent) {
-            return slotStart
+            // Check weather suitability
+            if (isWeatherSuitable(slotStart, weather, weatherConstraint)) {
+                return slotStart
+            }
+            // If weather not suitable, treat as a "conflict" and advance
+            currentPtr = addMinutes(currentPtr, 30) // Try 30 mins later
+            continue
         }
 
         // Skip to the end of the conflicting event
@@ -93,7 +95,7 @@ export function findFirstAvailableSlot(
     }
 
     // Fallback if no slot found today: push to the same startHour tomorrow
-    return findFirstAvailableSlot(addHours(date, 24), durationMinutes, existingEvents, startHour, endHour)
+    return findFirstAvailableSlot(addHours(date, 24), durationMinutes, existingEvents, startHour, endHour, weather, weatherConstraint)
 }
 
 export interface IntelligentSettings {
@@ -111,9 +113,13 @@ export const DEFAULT_SETTINGS: IntelligentSettings = {
 }
 
 /**
- * Re-schedules all ghost goals to avoid conflicts with confirmed events and respect DND.
+ * Re-schedules all ghost goals to avoid conflicts, respect DND, and account for weather context.
  */
-export function resolveConflicts(allEvents: CalendarEvent[], settings: IntelligentSettings = DEFAULT_SETTINGS): CalendarEvent[] {
+export function resolveConflicts(
+    allEvents: CalendarEvent[],
+    settings: IntelligentSettings = DEFAULT_SETTINGS,
+    weather: WeatherData | null = null
+): CalendarEvent[] {
     const hardEvents = allEvents.filter(e => !e.isGoal || e.confirmed)
     const ghostGoals = allEvents.filter(e => e.isGoal && !e.confirmed)
 
@@ -130,24 +136,13 @@ export function resolveConflicts(allEvents: CalendarEvent[], settings: Intellige
             ({ start: startHour, end: endHour } = settings.evening)
         }
 
-        // We wrap the slot finding in a way that respects Quiet Hours
-        const findSlotWithQuietHours = (date: Date, dur: number, currentEvents: CalendarEvent[]): Date => {
-            let candidate = findFirstAvailableSlot(date, dur, currentEvents, startHour, endHour)
-
-            // Basic Quiet Hours check - if the slot starts or ends during Quiet Hours, we need a better check
-            // For now, let's just ensure startHour and endHour don't overlap with Quiet Hours in the simple case.
-            // A more robust implementation would check every 15m block against the Quiet Hours range.
-            return candidate
-        }
-
         const duration = goal.duration || 60
-        const newStart = findFirstAvailableSlot(goal.start, duration, resolved, startHour, endHour)
 
-        // Final sanity check: if the newStart is within Quiet Hours, we'll try to push it past Quiet Hours end
-        let finalStart = newStart
-        const startHr = getHours(finalStart)
+        // Liquid Scheduling: Find the first available slot starting from the goal's original start date
+        // but allowing it to move forward indefinitely until a slot is found.
+        let finalStart = findFirstAvailableSlot(goal.start, duration, resolved, startHour, endHour, weather, goal.weatherConstraint)
 
-        // Simple Quiet Hours logic: if 10pm-7am
+        // Simple Quiet Hours logic check
         const isQuietHours = (hr: number) => {
             if (settings.quietHours.start > settings.quietHours.end) {
                 return hr >= settings.quietHours.start || hr < settings.quietHours.end
@@ -155,15 +150,14 @@ export function resolveConflicts(allEvents: CalendarEvent[], settings: Intellige
             return hr >= settings.quietHours.start && hr < settings.quietHours.end
         }
 
+        let startHr = getHours(finalStart)
         if (isQuietHours(startHr)) {
-            // Push to end of Quiet Hours on that day (or next)
             let parsedQuietHoursEndDay = finalStart;
-            // If Quiet Hours spans midnight (e.g. 22 to 7) and current hour is >= 22, the end is tomorrow
             if (settings.quietHours.start > settings.quietHours.end && startHr >= settings.quietHours.start) {
                 parsedQuietHoursEndDay = addHours(finalStart, 24);
             }
             const quietHoursEndDate = setMinutes(setHours(parsedQuietHoursEndDay, settings.quietHours.end), 0)
-            finalStart = findFirstAvailableSlot(quietHoursEndDate, duration, resolved, startHour, endHour)
+            finalStart = findFirstAvailableSlot(quietHoursEndDate, duration, resolved, startHour, endHour, weather, goal.weatherConstraint)
         }
 
         const newEnd = addMinutes(finalStart, duration)

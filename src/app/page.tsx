@@ -41,6 +41,8 @@ const getEmojiForTitle = (title: string): string => {
   return '📅'
 }
 
+import { getForecast, WeatherData } from '../lib/weather-utils'
+
 export default function CalendarPage() {
   const { data: session } = useSession()
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -57,13 +59,19 @@ export default function CalendarPage() {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settings, setSettings] = useState<IntelligentSettings>(DEFAULT_SETTINGS)
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const viewsContainerRef = useRef<HTMLDivElement>(null)
+
+  // Fetch forecast on mount
+  useEffect(() => {
+    getForecast().then(setWeatherData)
+  }, [])
 
   // Fetch events on mount and when session/guest status changes
   useEffect(() => {
     if (session?.user?.id) {
       getEvents(session.user.id).then(data => {
-        setEvents(resolveConflicts(data as CalendarEvent[], settings))
+        setEvents(resolveConflicts(data as CalendarEvent[], settings, weatherData))
       })
     } else {
       // Always treat as guest if not logged in
@@ -71,13 +79,13 @@ export default function CalendarPage() {
       if (savedEvents) {
         try {
           const parsed = JSON.parse(savedEvents)
-          setEvents(resolveConflicts(parsed.map((e: any) => ({ ...e, start: new Date(e.start), end: new Date(e.end) })), settings))
+          setEvents(resolveConflicts(parsed.map((e: any) => ({ ...e, start: new Date(e.start), end: new Date(e.end) })), settings, weatherData))
         } catch (e) {
           console.error("Failed to parse guest events", e)
         }
       }
     }
-  }, [session, settings])
+  }, [session, settings, weatherData])
 
   // Persist local events when not logged in
   useEffect(() => {
@@ -105,27 +113,67 @@ export default function CalendarPage() {
   const parsedPreview = useMemo(() => {
     if (!commandInput.trim()) return null
     const refDate = modalDateContext || new Date()
-    const isGoal = /^goal:|^smart:/i.test(commandInput)
-    let tempTitle = commandInput.replace(/^goal:|^smart:/i, '').trim()
+    let tempTitle = commandInput
+
+    const isGoal = tempTitle.toLowerCase().startsWith('goal:') || tempTitle.toLowerCase().startsWith('smart goal:')
+    tempTitle = tempTitle.replace(/^(goal:|smart goal:)/i, '').trim()
 
     let start = refDate
     let hasTime = false
     let duration = 60
     let preferredTime: 'morning' | 'afternoon' | 'evening' | undefined = undefined
+    let weatherConstraint: 'outdoor' | 'clear' | 'none' = 'none'
     let frequency: 'daily' | 'weekly' | 'monthly' | undefined = undefined
+    let frequencyCount: number | undefined = undefined
 
-    const freqMatch = tempTitle.match(/\bevery\s*day\b|\bdaily\b|\bweekly\b|\bevery\s+week\b/i)
-    if (freqMatch) {
-      const match = freqMatch[0].toLowerCase()
-      if (match.includes('day') || match.includes('daily')) frequency = 'daily'
-      else if (match.includes('week')) frequency = 'weekly'
-      tempTitle = tempTitle.replace(freqMatch[0], '').replace(/\s+/g, ' ').trim()
+    // Improved frequency detection: "every day", "daily", "3 times a week", "once a month"
+    const freqCountMatch = tempTitle.match(/(\d+|once|twice)\s*times?\s*(a|per|every)?\s*(week|month|day|weekly|monthly|daily)/i)
+    if (freqCountMatch) {
+      const countStr = freqCountMatch[1].toLowerCase()
+      const unitStr = freqCountMatch[3].toLowerCase()
+
+      if (countStr === 'once') frequencyCount = 1
+      else if (countStr === 'twice') frequencyCount = 2
+      else frequencyCount = parseInt(countStr)
+
+      if (unitStr.includes('day')) frequency = 'daily'
+      else if (unitStr.includes('week')) frequency = 'weekly'
+      else if (unitStr.includes('month')) frequency = 'monthly'
+
+      tempTitle = tempTitle.replace(freqCountMatch[0], '').replace(/\s+/g, ' ').trim()
+    } else {
+      const simpleFreqMatch = tempTitle.match(/\bevery\s*day\b|\bdaily\b|\bweekly\b|\bevery\s+week\b/i)
+      if (simpleFreqMatch) {
+        const match = simpleFreqMatch[0].toLowerCase()
+        if (match.includes('day') || match.includes('daily')) frequency = 'daily'
+        else if (match.includes('week')) frequency = 'weekly'
+        frequencyCount = 1
+        tempTitle = tempTitle.replace(simpleFreqMatch[0], '').replace(/\s+/g, ' ').trim()
+      }
     }
 
     const prefMatch = tempTitle.match(/\bmorning\b|\bafternoon\b|\bevening\b/i)
     if (prefMatch) {
       preferredTime = prefMatch[0].toLowerCase() as any
       tempTitle = tempTitle.replace(prefMatch[0], '').replace(/\s+/g, ' ').trim()
+    } else if (isGoal) {
+      // Subtle inference: High energy -> Morning, Admin -> Afternoon, Leisure -> Evening
+      const t = tempTitle.toLowerCase()
+      if (t.match(/\b(gym|workout|run|code|deep work|focus|strategy|writing|study)\b/i)) {
+        preferredTime = 'morning'
+      } else if (t.match(/\b(admin|email|errand|grocery|groceries|shopping|call|sync|bills)\b/i)) {
+        preferredTime = 'afternoon'
+      } else if (t.match(/\b(dinner|relax|read|reading|movie|meditation|yoga|rest)\b/i)) {
+        preferredTime = 'evening'
+      }
+    }
+
+    const weatherMatch = tempTitle.match(/#(outdoor|outside|clear|sunny)\b/i)
+    if (weatherMatch) {
+      const tag = weatherMatch[1].toLowerCase()
+      if (tag === 'clear' || tag === 'sunny') weatherConstraint = 'clear'
+      else weatherConstraint = 'outdoor'
+      tempTitle = tempTitle.replace(weatherMatch[0], '').replace(/\s+/g, ' ').trim()
     }
 
     const durationMatch = tempTitle.match(/(\d+)\s*(m|min|minute|minutes|h|hr|hour|hours)\b/i)
@@ -155,7 +203,7 @@ export default function CalendarPage() {
       .replace(/\s+/g, ' ')
       .trim()
 
-    return { title: title || 'Untitled Event', start, hasTime, duration, preferredTime, frequency, isGoal }
+    return { title: title || 'Untitled Event', start, hasTime, duration, preferredTime, frequency, frequencyCount, isGoal, weatherConstraint }
   }, [commandInput, modalDateContext])
 
   const handleCreateEvent = async () => {
@@ -170,17 +218,31 @@ export default function CalendarPage() {
       duration: parsedPreview.duration,
       preferredTime: parsedPreview.preferredTime,
       frequency: parsedPreview.frequency,
+      frequencyCount: parsedPreview.frequencyCount,
+      weatherConstraint: parsedPreview.weatherConstraint,
       isGoal: parsedPreview.isGoal,
       confirmed: !parsedPreview.isGoal,
     }
 
     const instances = []
-    const numInstances = parsedPreview.frequency === 'daily' ? 7 : (parsedPreview.frequency === 'weekly' ? 4 : 1)
+    let numInstances = 1
+    if (parsedPreview.frequency === 'daily') numInstances = 7
+    else if (parsedPreview.frequency === 'weekly') numInstances = parsedPreview.frequencyCount || 1
+    else if (parsedPreview.frequency === 'monthly') numInstances = parsedPreview.frequencyCount || 1
 
     for (let i = 0; i < numInstances; i++) {
-      const start = i === 0 ? parsedPreview.start : (
-        parsedPreview.frequency === 'daily' ? addDays(parsedPreview.start, i) : addDays(parsedPreview.start, i * 7)
-      )
+      let start = parsedPreview.start;
+      if (parsedPreview.frequency === 'daily') {
+        start = addDays(parsedPreview.start, i)
+      } else if (parsedPreview.frequency === 'weekly') {
+        // If "5 times a week", spread them by about 1.4 days each
+        const gap = 7 / (numInstances || 1)
+        start = addDays(parsedPreview.start, Math.floor(i * gap))
+      } else if (parsedPreview.frequency === 'monthly') {
+        const gap = 30 / (numInstances || 1)
+        start = addDays(parsedPreview.start, Math.floor(i * gap))
+      }
+
       instances.push({
         ...baseEventData,
         start,
@@ -197,7 +259,7 @@ export default function CalendarPage() {
         ...inst,
         id: Math.random().toString(36).substr(2, 9),
       }))
-      setEvents(prev => resolveConflicts([...prev, ...guestEvents], settings))
+      setEvents(prev => resolveConflicts([...prev, ...guestEvents], settings, weatherData))
     }
 
     setCommandInput('')
@@ -284,6 +346,7 @@ export default function CalendarPage() {
             settings={settings}
             resolveConflicts={resolveConflicts}
             isGuest={!session}
+            weatherData={weatherData}
           />
         )}
 
@@ -298,6 +361,8 @@ export default function CalendarPage() {
             setEvents={setEvents}
             settings={settings}
             resolveConflicts={resolveConflicts}
+            isGuest={!session}
+            weatherData={weatherData}
           />
         )}
 
@@ -312,6 +377,8 @@ export default function CalendarPage() {
             setEvents={setEvents}
             settings={settings}
             resolveConflicts={resolveConflicts}
+            isGuest={!session}
+            weatherData={weatherData}
           />
         )}
 
