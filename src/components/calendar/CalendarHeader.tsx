@@ -1,6 +1,6 @@
 import React from 'react'
-import { format, subMonths, addMonths } from 'date-fns'
-import { Plus, Settings, RefreshCw, ChevronLeft, ChevronRight, Calendar, Columns, Square, List } from 'lucide-react'
+import { format, subMonths, addMonths, subWeeks, addWeeks, subDays, addDays } from 'date-fns'
+import { Plus, Settings, RefreshCw, ChevronLeft, ChevronRight, Calendar, Columns, Square, List, LogIn } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { signIn, signOut } from 'next-auth/react'
 import { syncGoogleAction } from "../../lib/actions"
@@ -44,13 +44,29 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         }
     }
 
+    const handlePrev = () => {
+        if (view === 'week') setCurrentDate(subWeeks(currentDate, 1))
+        else if (view === 'day' || view === 'schedule') setCurrentDate(subDays(currentDate, 1))
+        else setCurrentDate(subMonths(currentDate, 1))
+    }
+
+    const handleNext = () => {
+        if (view === 'week') setCurrentDate(addWeeks(currentDate, 1))
+        else if (view === 'day' || view === 'schedule') setCurrentDate(addDays(currentDate, 1))
+        else setCurrentDate(addMonths(currentDate, 1))
+    }
+
     return (
-        <nav className="top-nav">
+        <nav className="top-nav" style={{
+            background: view === 'social' ? 'transparent' : 'var(--background)',
+            borderBottom: view === 'social' ? 'none' : '1px solid var(--border)',
+            transition: 'all 0.5s ease'
+        }}>
             <div className="nav-left">
                 <div
                     className="logo-text"
                     onClick={() => setView('month')}
-                    style={{ cursor: 'pointer' }}
+                    style={{ color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)' }}
                 >
                     BetterCal
                 </div>
@@ -61,6 +77,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                             setView('month')
                             setIsViewsOpen(false)
                         }}
+                        style={{ color: view === 'social' ? 'var(--socal-text-contrast)' : undefined }}
                     >
                         Calendar
                     </div>
@@ -69,6 +86,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                         <div
                             className={`nav-link ${isViewsOpen ? 'active' : ''}`}
                             onClick={() => setIsViewsOpen(!isViewsOpen)}
+                            style={{ color: view === 'social' ? 'var(--socal-text-contrast)' : undefined }}
                         >
                             Views
                         </div>
@@ -104,85 +122,100 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                             )}
                         </AnimatePresence>
                     </div>
-
-                    <div
-                        className={`nav-link ${view === 'schedule' ? 'active' : ''}`}
-                        onClick={() => {
-                            setView('schedule')
-                            setIsViewsOpen(false)
-                        }}
-                    >
-                        Schedule
-                    </div>
                 </div>
             </div>
 
             <div className="nav-right">
-                <div className="nav-controls">
-                    <span className="text-btn muted" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>Prev</span>
-                    <span className="text-btn bold" onClick={() => setCurrentDate(new Date())}>Today</span>
-                    <span className="text-btn muted" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>Next</span>
-                </div>
-                <div className="nav-right-group" style={{ gap: '24px' }}>
-                    <h1 className="month-display">{format(currentDate, 'MMMM yyyy')}</h1>
+                <div className="nav-right-group" style={{ gap: '24px', display: 'flex', alignItems: 'center' }}>
+                    <div className="nav-controls-group" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <h1 className="month-display" style={{ width: 'auto', minWidth: '180px', color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)' }}>{format(currentDate, 'MMMM yyyy')}</h1>
+                        <div className="nav-arrows" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--muted)' }}>
+                            <span className="nav-arrow-btn" onClick={handlePrev} title="Previous" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}>
+                                <ChevronLeft size={20} />
+                            </span>
+                            <span className="nav-arrow-btn" onClick={handleNext} title="Next" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}>
+                                <ChevronRight size={20} />
+                            </span>
+                        </div>
+                    </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {session && (
-                            <button
-                                className={`sync-icon-btn ${isSyncing ? 'syncing' : ''}`}
-                                onClick={handleSync}
-                                disabled={isSyncing}
-                                aria-label="Sync Google Calendar"
-                                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                            >
-                                <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
-                            </button>
-                        )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div
+                            onClick={() => {
+                                setView('social')
+                                setIsViewsOpen(false)
+                            }}
+                            style={{
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                opacity: view === 'social' ? 1 : 0.6,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <span style={{
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                letterSpacing: '0.1em',
+                                background: 'linear-gradient(90deg, var(--socal-grad-1, #f97316), var(--socal-grad-2, #ec4899))',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                            }}>
+                                SoCal
+                            </span>
+                        </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0px', color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)' }}>
                             <div
                                 id="plus-btn"
                                 className="plus-btn"
+                                style={{ color: 'inherit' }}
                                 onClick={(e: React.MouseEvent) => {
                                     const rect = e.currentTarget.getBoundingClientRect()
                                     setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
                                     setIsCommandOpen(true)
                                 }}
-                                style={{ cursor: 'pointer', opacity: 0.4, display: 'flex', alignItems: 'center', color: 'var(--foreground)' }}
+                                title="Add Event"
                             >
-                                <Plus size={14} strokeWidth={3} />
+                                <Plus size={14} strokeWidth={2.5} />
                             </div>
 
                             <div
-                                className="intelligence-btn"
+                                className="plus-btn"
+                                style={{ color: 'inherit' }}
                                 onClick={(e: React.MouseEvent) => {
                                     const rect = e.currentTarget.getBoundingClientRect()
                                     setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
                                     setIsSettingsOpen(true)
                                 }}
-                                style={{ cursor: 'pointer', opacity: 0.4, display: 'flex', alignItems: 'center', color: 'var(--foreground)' }}
+                                title="Settings"
                             >
-                                <Settings size={14} strokeWidth={3} />
+                                <Settings size={14} strokeWidth={2.5} />
                             </div>
-                        </div>
 
-                        {session ? (
-                            <img
-                                src={session.user?.image || `https://ui-avatars.com/api/?name=${session.user?.name}`}
-                                alt="Profile"
-                                className="user-avatar"
-                                onClick={() => signOut()}
-                                style={{ width: '24px', height: '24px', borderRadius: '50%', cursor: 'pointer', marginLeft: '8px' }}
-                            />
-                        ) : (
-                            <button
-                                className="login-btn"
-                                onClick={() => signIn()}
-                                style={{ background: 'none', border: '1px solid var(--foreground)', borderRadius: '4px', padding: '2px 8px', fontSize: '12px', cursor: 'pointer' }}
-                            >
-                                Sign In
-                            </button>
-                        )}
+                            {session ? (
+                                <div className="plus-btn">
+                                    <img
+                                        src={session.user?.image || `https://ui-avatars.com/api/?name=${session.user?.name}`}
+                                        alt="Profile"
+                                        className="user-avatar"
+                                        onClick={() => signOut()}
+                                        title="Sign Out"
+                                        style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
+                                    />
+                                </div>
+                            ) : (
+                                <div
+                                    className="plus-btn"
+                                    style={{ color: 'inherit' }}
+                                    onClick={() => signIn()}
+                                    title="Sign In"
+                                >
+                                    <LogIn size={14} strokeWidth={2.5} />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

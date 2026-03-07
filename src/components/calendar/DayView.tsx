@@ -7,7 +7,7 @@ interface DayViewProps {
     events: CalendarEvent[]
     setPopoverPosition: (pos: any) => void
     setModalDateContext: (date: Date) => void
-    setIsEventModalOpen: (open: boolean) => void
+    setIsCommandOpen: (open: boolean) => void
     setSelectedEvent: (event: CalendarEvent) => void
     setEvents: (fn: (prev: CalendarEvent[]) => CalendarEvent[]) => void
     settings: any
@@ -21,7 +21,7 @@ export const DayView: React.FC<DayViewProps> = ({
     events,
     setPopoverPosition,
     setModalDateContext,
-    setIsEventModalOpen,
+    setIsCommandOpen,
     setSelectedEvent,
     setEvents,
     settings,
@@ -91,7 +91,7 @@ export const DayView: React.FC<DayViewProps> = ({
                                 const rect = e.currentTarget.getBoundingClientRect()
                                 setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
                                 setModalDateContext(hourDate)
-                                setIsEventModalOpen(true)
+                                setIsCommandOpen(true)
                             }}
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}

@@ -8,7 +8,7 @@ interface WeekViewProps {
     events: CalendarEvent[]
     setPopoverPosition: (pos: any) => void
     setModalDateContext: (date: Date) => void
-    setIsEventModalOpen: (open: boolean) => void
+    setIsCommandOpen: (open: boolean) => void
     setSelectedEvent: (event: CalendarEvent) => void
     setEvents: (fn: (prev: CalendarEvent[]) => CalendarEvent[]) => void
     settings: any
@@ -22,7 +22,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
     events,
     setPopoverPosition,
     setModalDateContext,
-    setIsEventModalOpen,
+    setIsCommandOpen,
     setSelectedEvent,
     setEvents,
     settings,
@@ -87,7 +87,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                 const rect = e.currentTarget.getBoundingClientRect()
                                 setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
                                 setModalDateContext(day)
-                                setIsEventModalOpen(true)
+                                setIsCommandOpen(true)
                             }}
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}

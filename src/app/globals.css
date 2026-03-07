@@ -4,17 +4,17 @@
   --muted: #666666;
   --border: #f0f0f0;
 
-  /* Bold Muted Palette (Improved Contrast) */
-  --blue-muted: #dbeafe;
-  --blue-text: #1e40af;
-  --rose-muted: #ffe4e6;
-  --rose-text: #be123c;
+  /* Vibrant Theme Palette */
+  --blue-muted: #ccfbf1;
+  --blue-text: #0f766e;
+  --rose-muted: #fce7f3;
+  --rose-text: #be185d;
   --sage-muted: #dcfce7;
   --sage-text: #15803d;
-  --slate-muted: #f1f5f9;
-  --slate-text: #475569;
-  --amber-muted: #fef3c7;
-  --amber-text: #b45309;
+  --slate-muted: #fef08a;
+  --slate-text: #a16207;
+  --amber-muted: #ffedd5;
+  --amber-text: #c2410c;
 
   --current-vibe: var(--slate-text);
 }
@@ -66,6 +66,7 @@ body {
   letter-spacing: -0.06em;
   color: var(--foreground);
   user-select: none;
+  cursor: pointer;
 }
 
 .nav-links {
@@ -145,17 +146,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   cursor: pointer;
-  opacity: 0.8;
-  transition: all 0.2s;
+  color: var(--foreground);
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
   align-self: center;
 }
 
 .plus-btn:hover {
   opacity: 1;
-  transform: scale(1.1);
 }
 
 .nav-controls {
@@ -180,6 +181,25 @@ body {
 .text-btn.muted {
   color: var(--muted);
 }
+
+.nav-arrow-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.2s ease;
+  border-radius: 8px;
+}
+
+.nav-arrow-btn:hover {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(236, 72, 153, 0.1));
+  color: var(--socal-grad-1, #f97316);
+  transform: translateY(-1px);
+}
+
 
 .dropdown-label {
   font-size: 9px;

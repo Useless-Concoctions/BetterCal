@@ -29,6 +29,7 @@ import { ScheduleView } from '../components/calendar/ScheduleView'
 import { CommandBar } from '../components/calendar/CommandBar'
 import { SettingsModal } from '../components/calendar/SettingsModal'
 import { EventPopover } from '../components/calendar/EventPopover'
+import { SocialDiscoverView } from '../components/calendar/SocialDiscoverView'
 
 import './globals.css'
 
@@ -43,10 +44,26 @@ const getEmojiForTitle = (title: string): string => {
 
 import { getForecast, WeatherData } from '../lib/weather-utils'
 
+const getSunThemeColors = (hour: number) => {
+  if (hour >= 5 && hour < 9) {
+    // Sunrise: Bright yellows and soft oranges
+    return { '--socal-grad-1': '#fde047', '--socal-grad-2': '#f97316', '--socal-text-contrast': '#000000' }
+  } else if (hour >= 9 && hour < 16) {
+    // Midday: Clear skies and bright sun
+    return { '--socal-grad-1': '#38bdf8', '--socal-grad-2': '#fbbf24', '--socal-text-contrast': '#000000' }
+  } else if (hour >= 16 && hour < 20) {
+    // Sunset: Deep oranges and magentas
+    return { '--socal-grad-1': '#f97316', '--socal-grad-2': '#be185d', '--socal-text-contrast': '#ffffff' }
+  } else {
+    // Night: Deep indigos and purples
+    return { '--socal-grad-1': '#4c1d95', '--socal-grad-2': '#1e3a8a', '--socal-text-contrast': '#ffffff' }
+  }
+}
+
 export default function CalendarPage() {
   const { data: session } = useSession()
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [view, setView] = useState<'month' | 'week' | 'day' | 'schedule'>('month')
+  const [view, setView] = useState<'month' | 'week' | 'day' | 'schedule' | 'social'>('month')
   const [isViewsOpen, setIsViewsOpen] = useState(false)
   const [isCommandOpen, setIsCommandOpen] = useState(false)
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
@@ -109,6 +126,21 @@ export default function CalendarPage() {
   useEffect(() => {
     localStorage.setItem('bettercal_settings', JSON.stringify(settings))
   }, [settings])
+
+  // Sun Theme Logic
+  useEffect(() => {
+    const updateTheme = () => {
+      const hour = new Date().getHours()
+      const colors = getSunThemeColors(hour)
+      Object.entries(colors).forEach(([key, value]) => {
+        document.documentElement.style.setProperty(key, value)
+      })
+    }
+
+    updateTheme() // Initial run
+    const interval = setInterval(updateTheme, 60000) // Re-check every minute
+    return () => clearInterval(interval)
+  }, [])
 
   const parsedPreview = useMemo(() => {
     if (!commandInput.trim()) return null
@@ -195,16 +227,28 @@ export default function CalendarPage() {
         start = setHours(setMinutes(start, modalDateContext.getMinutes()), modalDateContext.getHours())
       }
     } else {
-      start = modalDateContext ? setHours(setMinutes(start, modalDateContext.getMinutes()), modalDateContext.getHours()) : setHours(setMinutes(start, 0), 10)
+      const defaultHour = isGoal ? settings.morning.start : 10
+      start = modalDateContext ? setHours(setMinutes(start, modalDateContext.getMinutes()), modalDateContext.getHours() || defaultHour) : setHours(setMinutes(start, 0), 10)
     }
 
-    let title = tempTitle
+    const title = tempTitle
       .replace(/#(focus|social|health|urgent)\b/gi, '')
       .replace(/\s+/g, ' ')
       .trim()
 
-    return { title: title || 'Untitled Event', start, hasTime, duration, preferredTime, frequency, frequencyCount, isGoal, weatherConstraint }
-  }, [commandInput, modalDateContext])
+    const previewEvent = { title: title || 'Untitled Event', start, hasTime, duration, preferredTime, frequency, frequencyCount, isGoal, weatherConstraint }
+
+    if (isGoal && !hasTime) {
+      // For flexible goals, we show the user where they will actually land in the calendar
+      const resolved = resolveConflicts([previewEvent as any, ...events], settings, weatherData)
+      const thisEvent = resolved.find(e => e.title === previewEvent.title && e.isGoal)
+      if (thisEvent) {
+        return { ...previewEvent, start: thisEvent.start }
+      }
+    }
+
+    return previewEvent
+  }, [commandInput, modalDateContext, events, settings, weatherData])
 
   const handleCreateEvent = async () => {
     if (!parsedPreview) return
@@ -316,7 +360,15 @@ export default function CalendarPage() {
   }, [events])
 
   return (
-    <div className="app-wrapper">
+    <div
+      className="app-wrapper"
+      style={{
+        background: view === 'social'
+          ? 'linear-gradient(135deg, var(--socal-grad-1), var(--socal-grad-2))'
+          : 'var(--background)',
+        transition: 'background 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}
+    >
       <CalendarHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
@@ -340,7 +392,7 @@ export default function CalendarPage() {
             calendarDays={calendarDays}
             setPopoverPosition={setPopoverPosition}
             setModalDateContext={setModalDateContext}
-            setIsEventModalOpen={setIsEventModalOpen}
+            setIsCommandOpen={setIsCommandOpen}
             setSelectedEvent={setSelectedEvent}
             setEvents={setEvents}
             settings={settings}
@@ -356,7 +408,7 @@ export default function CalendarPage() {
             events={events}
             setPopoverPosition={setPopoverPosition}
             setModalDateContext={setModalDateContext}
-            setIsEventModalOpen={setIsEventModalOpen}
+            setIsCommandOpen={setIsCommandOpen}
             setSelectedEvent={setSelectedEvent}
             setEvents={setEvents}
             settings={settings}
@@ -372,7 +424,7 @@ export default function CalendarPage() {
             events={events}
             setPopoverPosition={setPopoverPosition}
             setModalDateContext={setModalDateContext}
-            setIsEventModalOpen={setIsEventModalOpen}
+            setIsCommandOpen={setIsCommandOpen}
             setSelectedEvent={setSelectedEvent}
             setEvents={setEvents}
             settings={settings}
@@ -388,6 +440,10 @@ export default function CalendarPage() {
             setPopoverPosition={setPopoverPosition}
             setSelectedEvent={setSelectedEvent}
           />
+        )}
+
+        {view === 'social' && (
+          <SocialDiscoverView />
         )}
       </main>
 
@@ -420,13 +476,7 @@ export default function CalendarPage() {
       )}
 
       {/* Settings and Event Modal logic would also be extracted or kept clean here */}
-      <div style={{ position: 'fixed', bottom: 20, right: 20 }}>
-        {session ? (
-          <button onClick={() => signOut()} className="text-btn muted" style={{ fontSize: '12px' }}>Sign Out</button>
-        ) : (
-          <button onClick={() => signIn()} className="text-btn muted" style={{ fontSize: '12px' }}>Sign In</button>
-        )}
-      </div>
+
     </div>
   )
 }

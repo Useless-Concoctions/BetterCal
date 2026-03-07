@@ -94,8 +94,9 @@ export function findFirstAvailableSlot(
         }
     }
 
-    // Fallback if no slot found today: push to the same startHour tomorrow
-    return findFirstAvailableSlot(addHours(date, 24), durationMinutes, existingEvents, startHour, endHour, weather, weatherConstraint)
+    // Fallback if no slot found today: push to the startHour of tomorrow
+    const tomorrowAtStart = setMinutes(setHours(startOfDay(addHours(date, 24)), startHour), 0)
+    return findFirstAvailableSlot(tomorrowAtStart, durationMinutes, existingEvents, startHour, endHour, weather, weatherConstraint)
 }
 
 export interface IntelligentSettings {
