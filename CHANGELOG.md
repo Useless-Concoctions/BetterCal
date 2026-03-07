@@ -1,26 +1,35 @@
 # Changelog
 
-All notable changes to **BetterCal** will be documented in this file.
+All notable changes to **Better** will be documented in this file.
 
 ## [Unreleased]
 
 ## [0.8.0] - 2026-03-06
 ### Added
+- **SoCal Full-Page Gradient**: Expanded the SoCal view sunset gradient to cover the entire application background for a more immersive discovery experience.
+- **Dynamic Celestial Mechanics**: Added a fully responsive "Celestial Orb" (sun/moon) to the SoCal background that accurately reflects the time of day, complete with layout-animated rising/setting mechanics.
 - **SoCal Branding Restoration**: Formally restored the "SoCal" (Social Calendar) branding across the discovery interface, correcting an experimental rename to "Discover".
 - **Global Discovery Content**: Transitioned the "SoCal" discovery feed from California-specific events (Lakers, Hollywood Bowl) to a global set of featured calendars including F1, S&P 500 Earnings, and Global Music Festivals.
 - **SoCal Discovery Link**: Re-integrated the "SoCal" brand discovery toggle with a high-visibility sunset gradient and motion-smooth opacity states.
 - **LogIn Icon Navigation**: Standardized the authentication flow to use a minimalist `LogIn` icon, matching the new high-end icon set.
 
 ### Fixed
+- **Seamless Header Transitions**: Re-engineered the header background and border rendering to use synchronized opacity-fading layers, completely eliminating grey color-banding and snapping artifacts when transitioning cleanly into the SoCal view.
 - **Navigation Layout Stability**: Standardized the SoCal header link's alignment and opacity states to prevent layout shifts during view transitions.
 
 ### Changed
-- **Header Aesthetic Alignment**: Standardized the font size of the "BetterCal" logo and "Month Display" to a consistent `24px`, ensuring perfect visual symmetry across the top navigation bar.
-- **Control Cluster Refinement**: Re-engineered the navigation action center into an ultra-compact "control cluster":
-  - Reduced icon sizes for `Plus`, `Settings`, and `LogIn` to `14px` with a bold `2.5` stroke weight.
-  - Downsized the user avatar to `20px` for a cleaner profile signature.
-  - Eliminated internal gaps between action icons and reduced the button hit-areas to `24px` x `24px`.
-  - Simplified interaction feedback by removing hover background scaling and background fills, maintaining a more stable and professional header presence.
+- **Glassmorphic UI**: Updated the SoCal discovery cards and search bar to use premium glassmorphism (translucency + background blur) to maintain contrast safely against vibrant backgrounds.
+- **Adaptive Text Contrast**: Implemented logic to automatically switch header text and icons between black and white depending on the active time-of-day gradient to guarantee perfect readability.
+- **"BetterCal" Branding Simplification**: Refined the logo by using differential weighting (bold 950 weight for "Better" and lighter weight for "Cal") to achieve a minimalist, high-impact presence and resolve text-similarity visual weight issues with the SoCal discovery brand.
+- **Trinity Header Refactor**: Completely re-engineered the top navigation layout:
+  - **Left Group**: Unified the **BetterCal** logo with **Today**, **Views**, and **SoCal** links into a single, cohesive navigation row.
+  - **Right Group**: Grouped the **Month Display** and **Navigation Arrows** with the action icons (Plus, Settings, Account) for a more intuitive command-center feel.
+  - **Perfect Alignment**: Synchronized the vertical baseline and center-line for all header elements, ensuring a flawless horizontal flow across the screen.
+- **Functional Navigation Refresh**:
+  - Replaced the redundant "Calendar" link with a high-utility **Today** action that resets the current date context.
+  - Standardized the **Month Display** font size to `14px` (800 weight) to match the navigation links, creating a sophisticated visual hierarchy.
+  - Reduced the **SoCal** branding to $18px$ and integrated it as a discovery-focused nav link on the left, maintaining its signature sunset gradient.
+- **Header Transition Divider**: Added a sophisticated, motion-smooth bottom divider that fades out during the transition into the SoCal view.
 - **Logo Branding Refresh**: Updated the BetterCal logo with a bolder 900-weight typography, precise `-0.06em` letter spacing, and non-selectable text for a premium feel.
 - **Unified Branding Architecture**: Moved the logo's interactive properties (cursor, font weighting) to the global CSS, removing redundant inline styles for cleaner component architecture.
 - **Enhanced Navigation sequence**: Reordered the navigation flow to (Plus, Settings, Account) to prioritize most frequent user actions.
@@ -197,5 +206,4 @@ All notable changes to **BetterCal** will be documented in this file.
 - **Ambient Vibe Tinting**: The entire UI dynamically tints its border and logo colors based on your current focus block (Focus Blue, Social Rose, etc.).
 
 ---
-*Last updated: 2026-03-06* (SoCal branding removal and Discovery UI overhaul)
-
+*Last updated: 2026-03-06* (SoCal celestial mechanics and deep UI immersion)

@@ -58,35 +58,64 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 
     return (
         <nav className="top-nav" style={{
-            background: view === 'social' ? 'transparent' : 'var(--background)',
-            borderBottom: view === 'social' ? 'none' : '1px solid var(--border)',
-            transition: 'all 0.5s ease'
+            background: 'transparent',
+            position: 'relative'
         }}>
+            {/* 
+              Smooth opacity-based background transition 
+              (Prevents browser color interpolation artifacts when fading to transparent) 
+            */}
+            <div
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'var(--background)',
+                    borderBottom: '1px solid var(--border)',
+                    opacity: view === 'social' ? 0 : 1,
+                    transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)',
+                    pointerEvents: 'none',
+                    zIndex: -1
+                }}
+            />
+
             <div className="nav-left">
                 <div
                     className="logo-text"
-                    onClick={() => setView('month')}
-                    style={{ color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)' }}
+                    onClick={() => {
+                        setView('month')
+                        setIsViewsOpen(false)
+                    }}
+                    style={{
+                        color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)',
+                        transition: 'color 0.5s ease',
+                    }}
                 >
-                    BetterCal
+                    Better<span style={{ fontWeight: 400 }}>Cal</span>
                 </div>
                 <div className="nav-links">
                     <div
-                        className={`nav-link ${['month', 'week', 'day'].includes(view) ? 'active' : ''}`}
+                        className="nav-link"
                         onClick={() => {
-                            setView('month')
+                            setCurrentDate(new Date())
+                            if (view === 'social') setView('month')
                             setIsViewsOpen(false)
                         }}
-                        style={{ color: view === 'social' ? 'var(--socal-text-contrast)' : undefined }}
+                        style={{
+                            color: view === 'social' ? 'var(--socal-text-contrast)' : undefined,
+                            transition: 'color 0.5s ease'
+                        }}
                     >
-                        Calendar
+                        Today
                     </div>
 
-                    <div ref={viewsContainerRef} className="nav-link-container" style={{ display: 'flex', alignItems: 'baseline', gap: '16px' }}>
+                    <div ref={viewsContainerRef} className="nav-link-container" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div
                             className={`nav-link ${isViewsOpen ? 'active' : ''}`}
                             onClick={() => setIsViewsOpen(!isViewsOpen)}
-                            style={{ color: view === 'social' ? 'var(--socal-text-contrast)' : undefined }}
+                            style={{
+                                color: view === 'social' ? 'var(--socal-text-contrast)' : undefined,
+                                transition: 'color 0.5s ease'
+                            }}
                         >
                             Views
                         </div>
@@ -94,7 +123,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                         <AnimatePresence>
                             {isViewsOpen && (
                                 <motion.div
-                                    style={{ display: 'flex', alignItems: 'baseline', gap: '16px', overflow: 'hidden' }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '16px', overflow: 'hidden' }}
                                     initial={{ width: 0, opacity: 0 }}
                                     animate={{ width: 'auto', opacity: 1 }}
                                     exit={{ width: 0, opacity: 0 }}
@@ -122,100 +151,107 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                             )}
                         </AnimatePresence>
                     </div>
+
+                    <div
+                        className="nav-link"
+                        onClick={() => {
+                            setView('social')
+                            setIsViewsOpen(false)
+                        }}
+                        style={{
+                            color: view === 'social' ? 'var(--socal-text-contrast)' : undefined,
+                            fontWeight: 800,
+                            letterSpacing: '0.05em',
+                            background: view === 'social' ? 'none' : 'linear-gradient(90deg, var(--socal-grad-1, #f97316), var(--socal-grad-2, #ec4899))',
+                            WebkitBackgroundClip: view === 'social' ? 'none' : 'text',
+                            WebkitTextFillColor: view === 'social' ? 'var(--socal-text-contrast)' : 'transparent',
+                            opacity: view === 'social' ? 1 : 0.8,
+                            transition: 'all 0.5s ease'
+                        }}
+                    >
+                        SoCal
+                    </div>
                 </div>
             </div>
 
             <div className="nav-right">
-                <div className="nav-right-group" style={{ gap: '24px', display: 'flex', alignItems: 'center' }}>
-                    <div className="nav-controls-group" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <h1 className="month-display" style={{ width: 'auto', minWidth: '180px', color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)' }}>{format(currentDate, 'MMMM yyyy')}</h1>
-                        <div className="nav-arrows" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--muted)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+                    <div className="nav-date-group" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <h1 className="month-display" style={{
+                            color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)',
+                            transition: 'color 0.5s ease'
+                        }}>{format(currentDate, 'MMMM yyyy')}</h1>
+                        <div className="nav-arrows" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--muted)',
+                            transition: 'color 0.5s ease'
+                        }}>
                             <span className="nav-arrow-btn" onClick={handlePrev} title="Previous" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}>
-                                <ChevronLeft size={20} />
+                                <ChevronLeft size={16} />
                             </span>
                             <span className="nav-arrow-btn" onClick={handleNext} title="Next" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}>
-                                <ChevronRight size={20} />
+                                <ChevronRight size={16} />
                             </span>
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0px',
+                        color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)',
+                        transition: 'color 0.5s ease'
+                    }}>
                         <div
-                            onClick={() => {
-                                setView('social')
-                                setIsViewsOpen(false)
+                            id="plus-btn"
+                            className="plus-btn"
+                            style={{ color: 'inherit' }}
+                            onClick={(e: React.MouseEvent) => {
+                                const rect = e.currentTarget.getBoundingClientRect()
+                                setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+                                setIsCommandOpen(true)
                             }}
-                            style={{
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                opacity: view === 'social' ? 1 : 0.6,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}
+                            title="Add Event"
                         >
-                            <span style={{
-                                fontSize: '11px',
-                                fontWeight: 800,
-                                letterSpacing: '0.1em',
-                                background: 'linear-gradient(90deg, var(--socal-grad-1, #f97316), var(--socal-grad-2, #ec4899))',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                            }}>
-                                SoCal
-                            </span>
+                            <Plus size={14} strokeWidth={2.5} />
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0px', color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)' }}>
-                            <div
-                                id="plus-btn"
-                                className="plus-btn"
-                                style={{ color: 'inherit' }}
-                                onClick={(e: React.MouseEvent) => {
-                                    const rect = e.currentTarget.getBoundingClientRect()
-                                    setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
-                                    setIsCommandOpen(true)
-                                }}
-                                title="Add Event"
-                            >
-                                <Plus size={14} strokeWidth={2.5} />
-                            </div>
-
-                            <div
-                                className="plus-btn"
-                                style={{ color: 'inherit' }}
-                                onClick={(e: React.MouseEvent) => {
-                                    const rect = e.currentTarget.getBoundingClientRect()
-                                    setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
-                                    setIsSettingsOpen(true)
-                                }}
-                                title="Settings"
-                            >
-                                <Settings size={14} strokeWidth={2.5} />
-                            </div>
-
-                            {session ? (
-                                <div className="plus-btn">
-                                    <img
-                                        src={session.user?.image || `https://ui-avatars.com/api/?name=${session.user?.name}`}
-                                        alt="Profile"
-                                        className="user-avatar"
-                                        onClick={() => signOut()}
-                                        title="Sign Out"
-                                        style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
-                                    />
-                                </div>
-                            ) : (
-                                <div
-                                    className="plus-btn"
-                                    style={{ color: 'inherit' }}
-                                    onClick={() => signIn()}
-                                    title="Sign In"
-                                >
-                                    <LogIn size={14} strokeWidth={2.5} />
-                                </div>
-                            )}
+                        <div
+                            className="plus-btn"
+                            style={{ color: 'inherit' }}
+                            onClick={(e: React.MouseEvent) => {
+                                const rect = e.currentTarget.getBoundingClientRect()
+                                setPopoverPosition({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+                                setIsSettingsOpen(true)
+                            }}
+                            title="Settings"
+                        >
+                            <Settings size={14} strokeWidth={2.5} />
                         </div>
+
+                        {session ? (
+                            <div className="plus-btn">
+                                <img
+                                    src={session.user?.image || `https://ui-avatars.com/api/?name=${session.user?.name}`}
+                                    alt="Profile"
+                                    className="user-avatar"
+                                    onClick={() => signOut()}
+                                    title="Sign Out"
+                                    style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover', cursor: 'pointer' }}
+                                />
+                            </div>
+                        ) : (
+                            <div
+                                className="plus-btn"
+                                style={{ color: 'inherit' }}
+                                onClick={() => signIn()}
+                                title="Sign In"
+                            >
+                                <LogIn size={14} strokeWidth={2.5} />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

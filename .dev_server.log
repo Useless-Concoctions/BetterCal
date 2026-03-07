@@ -97,3 +97,21 @@ https://next-auth.js.org/warnings#no_secret
 ✓ Compiled in 17ms
 ✓ Compiled in 59ms
 ✓ Compiled in 23ms
+✓ Compiled in 135ms
+✓ Compiled in 64ms
+ GET / 200 in 1020ms (compile: 966ms, render: 54ms)
+✓ Compiled in 34ms
+✓ Compiled in 73ms
+✓ Compiled in 367ms
+✓ Compiled in 75ms
+✓ Compiled in 63ms
+ GET / 200 in 1323ms (compile: 1271ms, render: 53ms)
+✓ Compiled in 178ms
+✓ Compiled in 56ms
+✓ Compiled in 47ms
+✓ Compiled in 34ms
+✓ Compiled in 21ms
+✓ Compiled in 55ms
+✓ Compiled in 48ms
+✓ Compiled in 58ms
+✓ Compiled in 29ms

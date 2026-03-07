@@ -47,16 +47,48 @@ import { getForecast, WeatherData } from '../lib/weather-utils'
 const getSunThemeColors = (hour: number) => {
   if (hour >= 5 && hour < 9) {
     // Sunrise: Bright yellows and soft oranges
-    return { '--socal-grad-1': '#fde047', '--socal-grad-2': '#f97316', '--socal-text-contrast': '#000000' }
+    return {
+      '--socal-grad-1': '#fde047',
+      '--socal-grad-2': '#f97316',
+      '--socal-text-contrast': '#000000',
+      '--celestial-orb-color': '#fff7ed',
+      '--celestial-orb-glow': '#f97316',
+      '--celestial-orb-x': '15%',
+      '--celestial-orb-y': '75%'
+    }
   } else if (hour >= 9 && hour < 16) {
     // Midday: Clear skies and bright sun
-    return { '--socal-grad-1': '#38bdf8', '--socal-grad-2': '#fbbf24', '--socal-text-contrast': '#000000' }
+    return {
+      '--socal-grad-1': '#38bdf8',
+      '--socal-grad-2': '#fbbf24',
+      '--socal-text-contrast': '#000000',
+      '--celestial-orb-color': '#fff',
+      '--celestial-orb-glow': '#fffbe0',
+      '--celestial-orb-x': '50%',
+      '--celestial-orb-y': '25%'
+    }
   } else if (hour >= 16 && hour < 20) {
     // Sunset: Deep oranges and magentas
-    return { '--socal-grad-1': '#f97316', '--socal-grad-2': '#be185d', '--socal-text-contrast': '#ffffff' }
+    return {
+      '--socal-grad-1': '#f97316',
+      '--socal-grad-2': '#be185d',
+      '--socal-text-contrast': '#ffffff',
+      '--celestial-orb-color': '#ffedd5',
+      '--celestial-orb-glow': '#9a3412',
+      '--celestial-orb-x': '85%',
+      '--celestial-orb-y': '70%'
+    }
   } else {
     // Night: Deep indigos and purples
-    return { '--socal-grad-1': '#4c1d95', '--socal-grad-2': '#1e3a8a', '--socal-text-contrast': '#ffffff' }
+    return {
+      '--socal-grad-1': '#4c1d95',
+      '--socal-grad-2': '#1e3a8a',
+      '--socal-text-contrast': '#ffffff',
+      '--celestial-orb-color': '#eef2ff',
+      '--celestial-orb-glow': '#4338ca',
+      '--celestial-orb-x': '70%',
+      '--celestial-orb-y': '35%'
+    }
   }
 }
 
@@ -363,120 +395,168 @@ export default function CalendarPage() {
     <div
       className="app-wrapper"
       style={{
-        background: view === 'social'
-          ? 'linear-gradient(135deg, var(--socal-grad-1), var(--socal-grad-2))'
-          : 'var(--background)',
-        transition: 'background 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+        position: 'relative',
+        background: 'var(--background)',
+        overflow: 'hidden'
       }}
     >
-      <CalendarHeader
-        currentDate={currentDate}
-        setCurrentDate={setCurrentDate}
-        view={view}
-        setView={setView}
-        isViewsOpen={isViewsOpen}
-        setIsViewsOpen={setIsViewsOpen}
-        setIsCommandOpen={setIsCommandOpen}
-        setIsSettingsOpen={setIsSettingsOpen}
-        setPopoverPosition={setPopoverPosition}
-        viewsContainerRef={viewsContainerRef}
-        session={session}
-      />
-
-      <main className="main-stage">
-        {view === 'month' && (
-          <MonthView
-            currentDate={currentDate}
-            events={events}
-            monthStart={monthStart}
-            calendarDays={calendarDays}
-            setPopoverPosition={setPopoverPosition}
-            setModalDateContext={setModalDateContext}
-            setIsCommandOpen={setIsCommandOpen}
-            setSelectedEvent={setSelectedEvent}
-            setEvents={setEvents}
-            settings={settings}
-            resolveConflicts={resolveConflicts}
-            isGuest={!session}
-            weatherData={weatherData}
-          />
-        )}
-
-        {view === 'week' && (
-          <WeekView
-            weekDays={weekDays}
-            events={events}
-            setPopoverPosition={setPopoverPosition}
-            setModalDateContext={setModalDateContext}
-            setIsCommandOpen={setIsCommandOpen}
-            setSelectedEvent={setSelectedEvent}
-            setEvents={setEvents}
-            settings={settings}
-            resolveConflicts={resolveConflicts}
-            isGuest={!session}
-            weatherData={weatherData}
-          />
-        )}
-
-        {view === 'day' && (
-          <DayView
-            currentDate={currentDate}
-            events={events}
-            setPopoverPosition={setPopoverPosition}
-            setModalDateContext={setModalDateContext}
-            setIsCommandOpen={setIsCommandOpen}
-            setSelectedEvent={setSelectedEvent}
-            setEvents={setEvents}
-            settings={settings}
-            resolveConflicts={resolveConflicts}
-            isGuest={!session}
-            weatherData={weatherData}
-          />
-        )}
-
-        {view === 'schedule' && (
-          <ScheduleView
-            groupedEvents={groupedEvents}
-            setPopoverPosition={setPopoverPosition}
-            setSelectedEvent={setSelectedEvent}
-          />
-        )}
-
-        {view === 'social' && (
-          <SocialDiscoverView />
-        )}
-      </main>
-
-      <CommandBar
-        isCommandOpen={isCommandOpen}
-        setIsCommandOpen={setIsCommandOpen}
-        commandInput={commandInput}
-        setCommandInput={setCommandInput}
-        popoverPosition={popoverPosition}
-        parsedPreview={parsedPreview}
-        onEnter={handleCreateEvent}
-      />
-
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        setIsOpen={setIsSettingsOpen}
-        settings={settings}
-        setSettings={setSettings}
-        popoverPosition={popoverPosition}
-      />
-
-      {selectedEvent && (
-        <EventPopover
-          event={selectedEvent}
-          popoverPosition={popoverPosition}
-          onClose={() => setSelectedEvent(null)}
-          onDelete={handleDeleteEvent}
-          onConfirm={handleConfirmEvent}
+      <div
+        className="socal-bg-overlay"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(135deg, var(--socal-grad-1), var(--socal-grad-2))',
+          opacity: view === 'social' ? 1 : 0,
+          transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)',
+          pointerEvents: 'none',
+          zIndex: 0,
+          overflow: 'hidden'
+        }}
+      >
+        <AnimatePresence>
+          {view === 'social' && (
+            <motion.div
+              key="celestial-orb"
+              initial={{ top: '110%', left: '50%', opacity: 0, scale: 0.5 }}
+              animate={{
+                left: 'var(--celestial-orb-x)',
+                top: 'var(--celestial-orb-y)',
+                scale: 1,
+                opacity: 0.8
+              }}
+              exit={{ top: '110%', opacity: 0, scale: 0.5 }}
+              transition={{
+                duration: 3,
+                ease: [0.16, 1, 0.3, 1], // Expunge-like smooth easing
+                opacity: { duration: 1.5 }
+              }}
+              style={{
+                position: 'absolute',
+                width: '320px',
+                height: '320px',
+                background: 'var(--celestial-orb-color)',
+                borderRadius: '50%',
+                filter: 'blur(40px)',
+                boxShadow: '0 0 160px 60px var(--celestial-orb-glow)',
+                transform: 'translate(-50%, -50%)',
+                mixBlendMode: 'screen',
+                zIndex: -1
+              }}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <CalendarHeader
+          currentDate={currentDate}
+          setCurrentDate={setCurrentDate}
+          view={view}
+          setView={setView}
+          isViewsOpen={isViewsOpen}
+          setIsViewsOpen={setIsViewsOpen}
+          setIsCommandOpen={setIsCommandOpen}
+          setIsSettingsOpen={setIsSettingsOpen}
+          setPopoverPosition={setPopoverPosition}
+          viewsContainerRef={viewsContainerRef}
+          session={session}
         />
-      )}
 
-      {/* Settings and Event Modal logic would also be extracted or kept clean here */}
+        <main className="main-stage">
+          {view === 'month' && (
+            <MonthView
+              currentDate={currentDate}
+              events={events}
+              monthStart={monthStart}
+              calendarDays={calendarDays}
+              setPopoverPosition={setPopoverPosition}
+              setModalDateContext={setModalDateContext}
+              setIsCommandOpen={setIsCommandOpen}
+              setSelectedEvent={setSelectedEvent}
+              setEvents={setEvents}
+              settings={settings}
+              resolveConflicts={resolveConflicts}
+              isGuest={!session}
+              weatherData={weatherData}
+            />
+          )}
 
+          {view === 'week' && (
+            <WeekView
+              weekDays={weekDays}
+              events={events}
+              setPopoverPosition={setPopoverPosition}
+              setModalDateContext={setModalDateContext}
+              setIsCommandOpen={setIsCommandOpen}
+              setSelectedEvent={setSelectedEvent}
+              setEvents={setEvents}
+              settings={settings}
+              resolveConflicts={resolveConflicts}
+              isGuest={!session}
+              weatherData={weatherData}
+            />
+          )}
+
+          {view === 'day' && (
+            <DayView
+              currentDate={currentDate}
+              events={events}
+              setPopoverPosition={setPopoverPosition}
+              setModalDateContext={setModalDateContext}
+              setIsCommandOpen={setIsCommandOpen}
+              setSelectedEvent={setSelectedEvent}
+              setEvents={setEvents}
+              settings={settings}
+              resolveConflicts={resolveConflicts}
+              isGuest={!session}
+              weatherData={weatherData}
+            />
+          )}
+
+          {view === 'schedule' && (
+            <ScheduleView
+              groupedEvents={groupedEvents}
+              setPopoverPosition={setPopoverPosition}
+              setSelectedEvent={setSelectedEvent}
+            />
+          )}
+
+          {view === 'social' && (
+            <SocialDiscoverView />
+          )}
+        </main>
+
+        <CommandBar
+          isCommandOpen={isCommandOpen}
+          setIsCommandOpen={setIsCommandOpen}
+          commandInput={commandInput}
+          setCommandInput={setCommandInput}
+          popoverPosition={popoverPosition}
+          parsedPreview={parsedPreview}
+          onEnter={handleCreateEvent}
+        />
+
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          setIsOpen={setIsSettingsOpen}
+          settings={settings}
+          setSettings={setSettings}
+          popoverPosition={popoverPosition}
+        />
+
+        {selectedEvent && (
+          <EventPopover
+            event={selectedEvent}
+            popoverPosition={popoverPosition}
+            onClose={() => setSelectedEvent(null)}
+            onDelete={handleDeleteEvent}
+            onConfirm={handleConfirmEvent}
+          />
+        )}
+
+        {/* Settings and Event Modal logic would also be extracted or kept clean here */}
+
+      </div>
     </div>
   )
 }
+
