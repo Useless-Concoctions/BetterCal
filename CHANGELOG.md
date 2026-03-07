@@ -15,11 +15,6 @@ All notable changes to **BetterCal** will be documented in this file.
 - **Navigation Layout Stability**: Standardized the SoCal header link's alignment and opacity states to prevent layout shifts during view transitions.
 
 ### Changed
-- **SoCal Branding Removal**: Completely removed the large "SoCal" branding and "Powered by SoCal" labels from the Discovery view to prioritize a clean, content-first experience.
-- **Minimalist Discovery Redesign**: Refined the Social Discover view with high-impact typography (`64px` headlines), a sophisticated list-grid hybrid, and grayscale-to-color hover states.
-- **Navigation Aesthetic Refinement**: Removed the "pill" / "bubble" background from the SoCal header link, transitioning it to a clean, integrated text-only state that aligns with the premium minimalist navigation.
-- **Discovery Search UI**: Simplified the search interface into a refined, borderless input with a subtle interactive bottom-line transition.
-- **Localized UI Text**: Generalized all placeholder text and descriptions to remove regional bias, updating "Southern California" to "your world" across the Discovery interface.
 - **Header Aesthetic Alignment**: Standardized the font size of the "BetterCal" logo and "Month Display" to a consistent `24px`, ensuring perfect visual symmetry across the top navigation bar.
 - **Control Cluster Refinement**: Re-engineered the navigation action center into an ultra-compact "control cluster":
   - Reduced icon sizes for `Plus`, `Settings`, and `LogIn` to `14px` with a bold `2.5` stroke weight.
