@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to **Better** will be documented in this file.
+All notable changes to **BetterCal** will be documented in this file.
 
 ## [0.9.0] - 2026-03-09
 
