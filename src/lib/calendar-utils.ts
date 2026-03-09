@@ -104,13 +104,17 @@ export interface IntelligentSettings {
     afternoon: { start: number, end: number }
     evening: { start: number, end: number }
     quietHours: { start: number, end: number } // e.g. 22 to 7
+    interests: string[]
+    location: string
 }
 
 export const DEFAULT_SETTINGS: IntelligentSettings = {
     morning: { start: 6, end: 12 },
     afternoon: { start: 12, end: 18 },
     evening: { start: 18, end: 24 },
-    quietHours: { start: 22, end: 7 }
+    quietHours: { start: 22, end: 7 },
+    interests: ['Technology', 'Sports'],
+    location: 'Toronto, Canada'
 }
 
 /**

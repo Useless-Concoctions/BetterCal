@@ -29,7 +29,7 @@ import { ScheduleView } from '../components/calendar/ScheduleView'
 import { CommandBar } from '../components/calendar/CommandBar'
 import { SettingsModal } from '../components/calendar/SettingsModal'
 import { EventPopover } from '../components/calendar/EventPopover'
-import { SocialDiscoverView } from '../components/calendar/SocialDiscoverView'
+import { SoCalView } from '../components/calendar/SoCalView'
 
 import './globals.css'
 
@@ -95,7 +95,7 @@ const getSunThemeColors = (hour: number) => {
 export default function CalendarPage() {
   const { data: session } = useSession()
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [view, setView] = useState<'month' | 'week' | 'day' | 'schedule' | 'social'>('month')
+  const [view, setView] = useState<'month' | 'week' | 'day' | 'schedule' | 'socal'>('month')
   const [isViewsOpen, setIsViewsOpen] = useState(false)
   const [isCommandOpen, setIsCommandOpen] = useState(false)
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
@@ -406,45 +406,14 @@ export default function CalendarPage() {
           position: 'absolute',
           inset: 0,
           background: 'linear-gradient(135deg, var(--socal-grad-1), var(--socal-grad-2))',
-          opacity: view === 'social' ? 1 : 0,
+          opacity: view === 'socal' ? 1 : 0,
           transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)',
           pointerEvents: 'none',
           zIndex: 0,
           overflow: 'hidden'
         }}
       >
-        <AnimatePresence>
-          {view === 'social' && (
-            <motion.div
-              key="celestial-orb"
-              initial={{ top: '110%', left: '50%', opacity: 0, scale: 0.5 }}
-              animate={{
-                left: 'var(--celestial-orb-x)',
-                top: 'var(--celestial-orb-y)',
-                scale: 1,
-                opacity: 0.8
-              }}
-              exit={{ top: '110%', opacity: 0, scale: 0.5 }}
-              transition={{
-                duration: 3,
-                ease: [0.16, 1, 0.3, 1], // Expunge-like smooth easing
-                opacity: { duration: 1.5 }
-              }}
-              style={{
-                position: 'absolute',
-                width: '320px',
-                height: '320px',
-                background: 'var(--celestial-orb-color)',
-                borderRadius: '50%',
-                filter: 'blur(40px)',
-                boxShadow: '0 0 160px 60px var(--celestial-orb-glow)',
-                transform: 'translate(-50%, -50%)',
-                mixBlendMode: 'screen',
-                zIndex: -1
-              }}
-            />
-          )}
-        </AnimatePresence>
+
       </div>
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
         <CalendarHeader
@@ -520,8 +489,8 @@ export default function CalendarPage() {
             />
           )}
 
-          {view === 'social' && (
-            <SocialDiscoverView />
+          {view === 'socal' && (
+            <SoCalView settings={settings} />
           )}
         </main>
 

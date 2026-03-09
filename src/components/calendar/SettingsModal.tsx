@@ -19,7 +19,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setSettings,
     popoverPosition
 }) => {
-    const handleTimeChange = (category: keyof IntelligentSettings, field: 'start' | 'end', value: string) => {
+    const handleTimeChange = (category: 'morning' | 'afternoon' | 'evening' | 'quietHours', field: 'start' | 'end', value: string) => {
         const numValue = parseInt(value)
         setSettings({
             ...settings,
@@ -28,6 +28,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 [field]: numValue
             }
         })
+    }
+
+    const handleTextChange = (field: 'location' | 'interests', value: string) => {
+        if (field === 'interests') {
+            setSettings({ ...settings, interests: value.split(',').map(s => s.trim()).filter(s => s.length > 0) })
+        } else {
+            setSettings({ ...settings, location: value })
+        }
     }
 
     return (
@@ -92,6 +100,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+                                <div className="dropdown-label" style={{ border: 'none', padding: 0, marginBottom: 0 }}>PERSONALIZATION</div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--muted)' }}>Location</label>
+                                    <input
+                                        type="text"
+                                        value={settings.location || ''}
+                                        onChange={(e) => handleTextChange('location', e.target.value)}
+                                        placeholder="e.g. Toronto, Canada"
+                                        style={{ fontSize: '13px', padding: '8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.05)', color: 'var(--foreground)' }}
+                                    />
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--muted)' }}>Interests (comma-separated)</label>
+                                    <input
+                                        type="text"
+                                        value={(settings.interests || []).join(', ')}
+                                        onChange={(e) => handleTextChange('interests', e.target.value)}
+                                        placeholder="e.g. Technology, Sports, Art"
+                                        style={{ fontSize: '13px', padding: '8px', borderRadius: '4px', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.05)', color: 'var(--foreground)' }}
+                                    />
+                                </div>
                             </div>
                         </div>
 

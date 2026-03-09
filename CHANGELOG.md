@@ -2,7 +2,19 @@
 
 All notable changes to **Better** will be documented in this file.
 
-## [Unreleased]
+## [0.9.0] - 2026-03-09
+
+### Added
+- **Product Vision**: Created a dedicated `docs/VISION.md` document outlining the "North Star" for the Social Calendar (SoCal) ecosystem, focusing on the "Followable Feed of Time."
+- **Project Roadmap**: Created a high-fidelity `ROADMAP.md` strategic architecture, separating long-term vision from tactical product initiatives.
+- **Personalization Engine**: Introduced `interests` and `location` fields to the `IntelligentSettings` to enable regional and interest-aware event discovery.
+
+### Changed
+- **SoCal Subscription Model**: Transitioned the SoCal discovery logic from a utility "Add Event" model to a social "Following" and "Subscription" model for public calendar streams.
+- **SoCal AI Logic**: Refined the "SoCal AI Magic" assistant to focus on identifying and suggesting public subscriptions based on user context (e.g., stock portfolio analysis).
+- **Settings Modal Expansion**: Integrated high-fidelity UI fields for user location and interests into the Settings modal to drive personalized curation.
+- **Documentation Refresh**: Revamped the Features section in the `README.md` and standardized core documentation footer links to point to `ROADMAP.md`, `CHANGELOG.md`, `VISION.md`, and `SECURITY.md`.
+- **Tech Stack Accuracy**: Updated the Stack section in `README.md` to properly list explicit technology dependencies (e.g., `chrono-node` for NLP).
 
 ## [0.8.0] - 2026-03-06
 ### Added
@@ -39,6 +51,9 @@ All notable changes to **Better** will be documented in this file.
 - **SoCal Branding Casing**: Disabled all-caps transformation for "SoCal" and event category labels (Local, Sports, etc.) to ensure consistent, natural casing across the UI.
 
 ### Removed
+- **SoCal Mock Data**: Removed all placeholder/mock calendars from the SoCal view.
+- **Header Action Cleanup**: Removed the navigation arrow buttons next to the month display text.
+- **Celestial Orb Animation**: Removed the giant "solar eclipse" animation from the background of the SoCal page.
 - **Unused Event Modal**: Trimmed legacy "Event Modal" logic in favor of the more streamlined, contextual Command Bar flow.
 - **Navigation Cleanliness**: Completely removed the "Today" button from the header, as its previous prominent, bubbled aesthetic no longer aligned with the minimalist, icon-driven navigation experience.
 
@@ -206,4 +221,4 @@ All notable changes to **Better** will be documented in this file.
 - **Ambient Vibe Tinting**: The entire UI dynamically tints its border and logo colors based on your current focus block (Focus Blue, Social Rose, etc.).
 
 ---
-*Last updated: 2026-03-06* (SoCal celestial mechanics and deep UI immersion)
+*Last updated: 2026-03-09* (SoCal vision and strategic roadmap architecture)

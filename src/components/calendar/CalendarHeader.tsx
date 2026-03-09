@@ -71,7 +71,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                     inset: 0,
                     background: 'var(--background)',
                     borderBottom: '1px solid var(--border)',
-                    opacity: view === 'social' ? 0 : 1,
+                    opacity: view === 'socal' ? 0 : 1,
                     transition: 'opacity 1s cubic-bezier(0.4, 0, 0.2, 1)',
                     pointerEvents: 'none',
                     zIndex: -1
@@ -79,29 +79,49 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
             />
 
             <div className="nav-left">
-                <div
-                    className="logo-text"
-                    onClick={() => {
-                        setView('month')
-                        setIsViewsOpen(false)
-                    }}
-                    style={{
-                        color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)',
-                        transition: 'color 0.5s ease',
-                    }}
-                >
-                    Better<span style={{ fontWeight: 400 }}>Cal</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div
+                        className="logo-text"
+                        onClick={() => {
+                            setView('month')
+                            setIsViewsOpen(false)
+                        }}
+                        style={{
+                            color: view === 'socal' ? 'var(--socal-text-contrast)' : 'var(--foreground)',
+                            opacity: view !== 'socal' ? 1 : 0.5,
+                            transition: 'all 0.5s ease',
+                        }}
+                    >
+                        <span style={{ fontWeight: view !== 'socal' ? 950 : 400, transition: 'font-weight 0.5s ease' }}>Better</span><span style={{ fontWeight: 400 }}>Cal</span>
+                    </div>
+                    <div
+                        className="logo-text"
+                        onClick={() => {
+                            setView('socal')
+                            setIsViewsOpen(false)
+                        }}
+                        style={{
+                            color: view === 'socal' ? 'var(--socal-text-contrast)' : undefined,
+                            background: view === 'socal' ? 'none' : 'linear-gradient(90deg, var(--socal-grad-1, #f97316), var(--socal-grad-2, #ec4899))',
+                            WebkitBackgroundClip: view === 'socal' ? 'none' : 'text',
+                            WebkitTextFillColor: view === 'socal' ? 'var(--socal-text-contrast)' : 'transparent',
+                            opacity: view === 'socal' ? 1 : 0.5,
+                            transition: 'all 0.5s ease',
+                        }}
+                    >
+                        <span style={{ fontWeight: view === 'socal' ? 950 : 400, transition: 'font-weight 0.5s ease' }}>So</span><span style={{ fontWeight: 400 }}>Cal</span>
+                    </div>
                 </div>
                 <div className="nav-links">
                     <div
                         className="nav-link"
                         onClick={() => {
                             setCurrentDate(new Date())
-                            if (view === 'social') setView('month')
+                            if (view === 'socal') setView('month')
                             setIsViewsOpen(false)
                         }}
                         style={{
-                            color: view === 'social' ? 'var(--socal-text-contrast)' : undefined,
+                            color: view === 'socal' ? 'var(--socal-text-contrast)' : undefined,
                             transition: 'color 0.5s ease'
                         }}
                     >
@@ -113,7 +133,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                             className={`nav-link ${isViewsOpen ? 'active' : ''}`}
                             onClick={() => setIsViewsOpen(!isViewsOpen)}
                             style={{
-                                color: view === 'social' ? 'var(--socal-text-contrast)' : undefined,
+                                color: view === 'socal' ? 'var(--socal-text-contrast)' : undefined,
                                 transition: 'color 0.5s ease'
                             }}
                         >
@@ -152,25 +172,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                         </AnimatePresence>
                     </div>
 
-                    <div
-                        className="nav-link"
-                        onClick={() => {
-                            setView('social')
-                            setIsViewsOpen(false)
-                        }}
-                        style={{
-                            color: view === 'social' ? 'var(--socal-text-contrast)' : undefined,
-                            fontWeight: 800,
-                            letterSpacing: '0.05em',
-                            background: view === 'social' ? 'none' : 'linear-gradient(90deg, var(--socal-grad-1, #f97316), var(--socal-grad-2, #ec4899))',
-                            WebkitBackgroundClip: view === 'social' ? 'none' : 'text',
-                            WebkitTextFillColor: view === 'social' ? 'var(--socal-text-contrast)' : 'transparent',
-                            opacity: view === 'social' ? 1 : 0.8,
-                            transition: 'all 0.5s ease'
-                        }}
-                    >
-                        SoCal
-                    </div>
+
                 </div>
             </div>
 
@@ -178,30 +180,16 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
                     <div className="nav-date-group" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <h1 className="month-display" style={{
-                            color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)',
+                            color: view === 'socal' ? 'var(--socal-text-contrast)' : 'var(--foreground)',
                             transition: 'color 0.5s ease'
                         }}>{format(currentDate, 'MMMM yyyy')}</h1>
-                        <div className="nav-arrows" style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--muted)',
-                            transition: 'color 0.5s ease'
-                        }}>
-                            <span className="nav-arrow-btn" onClick={handlePrev} title="Previous" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}>
-                                <ChevronLeft size={16} />
-                            </span>
-                            <span className="nav-arrow-btn" onClick={handleNext} title="Next" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}>
-                                <ChevronRight size={16} />
-                            </span>
-                        </div>
                     </div>
 
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0px',
-                        color: view === 'social' ? 'var(--socal-text-contrast)' : 'var(--foreground)',
+                        color: view === 'socal' ? 'var(--socal-text-contrast)' : 'var(--foreground)',
                         transition: 'color 0.5s ease'
                     }}>
                         <div

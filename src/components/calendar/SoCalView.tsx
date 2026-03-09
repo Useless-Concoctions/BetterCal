@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Search, MapPin, TrendingUp, Trophy, Star, Bell, Plus } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Search, MapPin, TrendingUp, Trophy, Star, Bell, Plus, Sparkles } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { StockCalendarUploader } from './StockCalendarUploader'
 
 const CATEGORIES = [
     { id: 'local', name: 'Local Events', icon: <MapPin size={16} />, color: '#be185d', bg: '#fce7f3' },
@@ -9,60 +11,58 @@ const CATEGORIES = [
     { id: 'entertainment', name: 'Concerts & Shows', icon: <Star size={16} />, color: '#c2410c', bg: '#ffedd5' },
 ]
 
-const FEATURED_CALENDARS = [
+const FEATURED_CALENDARS: any[] = [
     {
-        id: '1',
-        title: 'F1 2026 World Championship',
+        id: 'f1-2026',
+        title: 'Formula 1 2026 Season',
+        description: 'Every Grand Prix weekend, including practice, qualifying, and race times.',
         category: 'Sports',
-        description: 'Every Grand Prix, qualifying session, and sprint race synced to your schedule.',
-        image: 'https://images.unsplash.com/photo-1542652694-40abf526446e?auto=format&fit=crop&q=80&w=800',
-        subscribers: '1.2M',
-        color: '#0f766e',
-        bg: '#ccfbf1'
-    },
-    {
-        id: '2',
-        title: 'S&P 500 Earnings Season',
-        category: 'Finance',
-        description: 'Quarterly earnings calls, product announcements, and shareholder meetings for the top 500 companies.',
-        image: 'https://images.unsplash.com/photo-1611562402179-813c6e9ea362?auto=format&fit=crop&q=80&w=800',
-        subscribers: '850K',
-        color: '#15803d',
-        bg: '#dcfce7'
-    },
-    {
-        id: '3',
-        title: 'Global Music Festivals 2026',
-        category: 'Local',
-        description: 'The ultimate guide to major music festivals around the world this summer.',
-        image: 'https://images.unsplash.com/photo-1540039155732-680cb7daaa3f?auto=format&fit=crop&q=80&w=800',
-        subscribers: '320K',
+        image: 'https://images.unsplash.com/photo-1534490484114-17365d62537c?auto=format&fit=crop&q=80&w=400',
         color: '#be185d',
-        bg: '#fce7f3'
+        subscribers: '1.2M'
     },
     {
-        id: '4',
-        title: 'AI & Future Tech Summits',
+        id: 'nintendo-releases',
+        title: 'Nintendo Releases & Directs',
+        description: 'New game drops, DLC updates, and official Nintendo Direct presentations.',
+        category: 'Entertainment',
+        image: 'https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?auto=format&fit=crop&q=80&w=400',
+        color: '#c2410c',
+        subscribers: '850k'
+    },
+    {
+        id: 'aapl-earnings',
+        title: 'Apple Earnings & Events',
+        description: 'Quarterly financial reports and major Apple Event keynotes.',
+        category: 'Finance',
+        image: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&q=80&w=400',
+        color: '#15803d',
+        subscribers: '420k'
+    },
+    {
+        id: 'toronto-events',
+        title: 'Toronto Concert Series',
+        description: 'Major venue concerts across Scotiabank Arena, Budweiser Stage, and more.',
         category: 'Local',
-        description: 'Keynotes, networking, and product launches from leading tech hubs globally.',
-        image: 'https://images.unsplash.com/photo-1555547633-8a38ae3b78eb?auto=format&fit=crop&q=80&w=800',
-        subscribers: '45K',
-        color: '#a16207',
-        bg: '#fef08a'
+        image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=400',
+        color: '#be185d',
+        subscribers: '15k'
     }
 ]
 
-export const SocialDiscoverView: React.FC = () => {
+export const SoCalView: React.FC = () => {
+    const { data: session } = useSession()
     const [searchQuery, setSearchQuery] = useState('')
     const [activeCategory, setActiveCategory] = useState<string | null>(null)
     const [subscribed, setSubscribed] = useState<string[]>([])
+    const [showUploader, setShowUploader] = useState(false)
 
     const toggleSubscription = (id: string) => {
         setSubscribed(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
     }
 
     return (
-        <div className="social-view-container" style={{
+        <div className="socal-view-container" style={{
             padding: '60px 80px',
             flex: 1,
             overflowY: 'auto',
@@ -82,7 +82,7 @@ export const SocialDiscoverView: React.FC = () => {
                             marginBottom: '24px'
                         }}
                     >
-                        Public Calendars
+                        Explore Collections
                     </motion.div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '40px' }}>
@@ -187,6 +187,55 @@ export const SocialDiscoverView: React.FC = () => {
                     ))}
                 </div>
 
+                <AnimatePresence>
+                    {(activeCategory === 'finance' || searchQuery.toLowerCase().includes('stock') || searchQuery.toLowerCase().includes('earning')) && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            style={{ marginBottom: '40px', overflow: 'hidden' }}
+                        >
+                            {!showUploader ? (
+                                <motion.div
+                                    whileHover={{ scale: 1.01 }}
+                                    whileTap={{ scale: 0.99 }}
+                                    onClick={() => setShowUploader(true)}
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(168, 85, 247, 0.1))',
+                                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                                        borderRadius: '24px',
+                                        padding: '40px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        backdropFilter: 'blur(10px)'
+                                    }}
+                                >
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                            <Sparkles size={16} style={{ color: '#38bdf8' }} />
+                                            <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#38bdf8' }}>SoCal AI Magic</span>
+                                        </div>
+                                        <h2 style={{ fontSize: '28px', fontWeight: 900, letterSpacing: '-0.03em', marginBottom: '8px' }}>Follow your portfolio.</h2>
+                                        <p style={{ color: 'var(--muted)', fontSize: '15px' }}>Upload a screenshot of your holdings to automatically subscribe to every relevant earnings call.</p>
+                                    </div>
+                                    <div style={{ padding: '16px', background: 'white', borderRadius: '16px', color: 'black', fontWeight: 700 }}>
+                                        Get Started
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+                                    <StockCalendarUploader
+                                        userId={session?.user?.id}
+                                        onComplete={() => setShowUploader(false)}
+                                    />
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr',
@@ -279,4 +328,3 @@ export const SocialDiscoverView: React.FC = () => {
         </div>
     )
 }
-
