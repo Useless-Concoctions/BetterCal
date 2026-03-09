@@ -2,20 +2,20 @@
 
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, X, Check, TrendingUp, Loader2, Calendar } from 'lucide-react'
-import { processStockScreenshot, getEarningsDates, addEarningsToCalendar } from '../../lib/stock-actions'
-import { CalendarEvent } from '../../lib/calendar-utils'
+import { Upload, X, Check, Image as ImageIcon, Loader2, Calendar } from 'lucide-react'
+import { processGenericScreenshot } from '../../lib/gemini-actions'
+import { createEvent } from '../../lib/actions'
 
-interface StockCalendarUploaderProps {
+interface EventIngestorProps {
     userId?: string;
     onComplete?: () => void;
 }
 
-export const StockCalendarUploader: React.FC<StockCalendarUploaderProps> = ({ userId, onComplete }) => {
+export const EventIngestor: React.FC<EventIngestorProps> = ({ userId, onComplete }) => {
     const [file, setFile] = useState<File | null>(null)
     const [preview, setPreview] = useState<string | null>(null)
-    const [status, setStatus] = useState<'idle' | 'processing' | 'fetching' | 'confirming' | 'done' | 'error'>('idle')
-    const [foundStocks, setFoundStocks] = useState<{ symbol: string; companyName: string; earningsDate: Date }[]>([])
+    const [status, setStatus] = useState<'idle' | 'processing' | 'confirming' | 'done' | 'error'>('idle')
+    const [parsedEvent, setParsedEvent] = useState<any>(null)
     const [errorMsg, setErrorMsg] = useState('')
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,24 +34,15 @@ export const StockCalendarUploader: React.FC<StockCalendarUploaderProps> = ({ us
 
         try {
             setStatus('processing')
-            const symbols = await processStockScreenshot(preview)
+            const eventData = await processGenericScreenshot(preview)
 
-            if (symbols.length === 0) {
+            if (!eventData) {
                 setStatus('error')
-                setErrorMsg('No stock symbols identified. Try a clearer screenshot.')
+                setErrorMsg('Could not find any event details in this image. Try another one.')
                 return
             }
 
-            setStatus('fetching')
-            const earnings = await getEarningsDates(symbols)
-
-            if (earnings.length === 0) {
-                setStatus('error')
-                setErrorMsg('No upcoming earnings dates found for these symbols.')
-                return
-            }
-
-            setFoundStocks(earnings)
+            setParsedEvent(eventData)
             setStatus('confirming')
         } catch (err: unknown) {
             setStatus('error')
@@ -61,15 +52,22 @@ export const StockCalendarUploader: React.FC<StockCalendarUploaderProps> = ({ us
 
     const handleConfirm = async () => {
         if (!userId) {
-            // If guest mode, we'd need to add to local state
-            // For now, let's assume login for this advanced feature or hint it
             setStatus('error')
             setErrorMsg('Please log in to save to your calendar.')
             return
         }
 
         try {
-            await addEarningsToCalendar(userId, foundStocks)
+            await createEvent(userId, {
+                title: parsedEvent.title,
+                start: new Date(parsedEvent.start),
+                end: parsedEvent.end ? new Date(parsedEvent.end) : new Date(new Date(parsedEvent.start).getTime() + 60 * 60 * 1000),
+                location: parsedEvent.location,
+                emoji: parsedEvent.emoji || '📅',
+                source: 'ingested',
+                isGoal: false,
+                confirmed: true
+            })
             setStatus('done')
             setTimeout(() => {
                 if (onComplete) onComplete()
@@ -96,17 +94,17 @@ export const StockCalendarUploader: React.FC<StockCalendarUploaderProps> = ({ us
                     width: '40px',
                     height: '40px',
                     borderRadius: '12px',
-                    background: 'var(--socal-grad-1, #38bdf8)',
+                    background: 'linear-gradient(135deg, #f43f5e, #eab308)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: 'white'
                 }}>
-                    <TrendingUp size={20} />
+                    <ImageIcon size={20} />
                 </div>
                 <div>
-                    <h2 style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.02em' }}>Personalized Subscription</h2>
-                    <p style={{ fontSize: '13px', color: 'var(--muted)' }}>Subscribe to events based on your holdings</p>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.02em' }}>Magic Ingestion</h2>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)' }}>Upload a flyer or screenshot to add it to your calendar</p>
                 </div>
             </div>
 
@@ -133,12 +131,12 @@ export const StockCalendarUploader: React.FC<StockCalendarUploaderProps> = ({ us
                                 background: 'rgba(255, 255, 255, 0.02)'
                             }}>
                                 <Upload size={24} style={{ color: 'var(--muted)' }} />
-                                <span style={{ fontSize: '14px', fontWeight: 600 }}>Drop screenshot or click to upload</span>
+                                <span style={{ fontSize: '14px', fontWeight: 600 }}>Drop an image or click to upload</span>
                                 <input type="file" hidden accept="image/*" onChange={handleFileChange} />
                             </label>
                         ) : (
                             <div style={{ position: 'relative' }}>
-                                <img src={preview} alt="Stock Preview" style={{ width: '100%', borderRadius: '12px', maxHeight: '200px', objectFit: 'cover' }} />
+                                <img src={preview} alt="Event Preview" style={{ width: '100%', borderRadius: '12px', maxHeight: '200px', objectFit: 'cover' }} />
                                 <button
                                     onClick={() => { setPreview(null); setFile(null); }}
                                     style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: '4px', cursor: 'pointer', color: 'white' }}
@@ -160,14 +158,14 @@ export const StockCalendarUploader: React.FC<StockCalendarUploaderProps> = ({ us
                                         cursor: 'pointer'
                                     }}
                                 >
-                                    Find Related Calendars
+                                    Extract Event Details
                                 </button>
                             </div>
                         )}
                     </motion.div>
                 )}
 
-                {(status === 'processing' || status === 'fetching') && (
+                {status === 'processing' && (
                     <motion.div
                         key="loading"
                         initial={{ opacity: 0 }}
@@ -175,43 +173,54 @@ export const StockCalendarUploader: React.FC<StockCalendarUploaderProps> = ({ us
                         exit={{ opacity: 0 }}
                         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '40px 0' }}
                     >
-                        <Loader2 size={32} className="animate-spin" style={{ color: 'var(--socal-grad-1)' }} />
+                        <Loader2 size={32} className="animate-spin" style={{ color: '#f43f5e' }} />
                         <div style={{ textAlign: 'center' }}>
-                            <p style={{ fontWeight: 700 }}>{status === 'processing' ? 'Identifying Stocks...' : 'Fetching Earnings...'}</p>
+                            <p style={{ fontWeight: 700 }}>Reading Image...</p>
                             <p style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>
-                                {status === 'processing' ? 'Gemini is reading your screenshot' : 'Checking upcoming earnings calls'}
+                                Gemini is analyzing the text and context
                             </p>
                         </div>
                     </motion.div>
                 )}
 
-                {status === 'confirming' && (
+                {status === 'confirming' && parsedEvent && (
                     <motion.div
                         key="confirm"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
                     >
-                        <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px' }}>
-                            {foundStocks.map((stock, i) => (
-                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                                    <div>
-                                        <div style={{ fontWeight: 800, fontSize: '14px' }}>{stock.symbol}</div>
-                                        <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{stock.companyName}</div>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '12px', fontWeight: 600 }}>{new Date(stock.earningsDate).toLocaleDateString()}</div>
-                                        <div style={{ fontSize: '10px', color: 'var(--socal-grad-1)' }}>Public Calendar</div>
-                                    </div>
+                        <div style={{ padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                                <span style={{ fontSize: '24px' }}>{parsedEvent.emoji || '📅'}</span>
+                                <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0 }}>{parsedEvent.title}</h3>
+                            </div>
+
+                            <div style={{ display: 'grid', gap: '8px', fontSize: '13px' }}>
+                                <div style={{ display: 'flex', gap: '8px', color: 'var(--muted)' }}>
+                                    <span style={{ fontWeight: 600, width: '60px' }}>Date:</span>
+                                    <span style={{ color: 'var(--foreground)' }}>{new Date(parsedEvent.start).toLocaleString()}</span>
                                 </div>
-                            ))}
+                                {parsedEvent.location && (
+                                    <div style={{ display: 'flex', gap: '8px', color: 'var(--muted)' }}>
+                                        <span style={{ fontWeight: 600, width: '60px' }}>Location:</span>
+                                        <span style={{ color: 'var(--foreground)' }}>{parsedEvent.location}</span>
+                                    </div>
+                                )}
+                                {parsedEvent.description && (
+                                    <div style={{ display: 'flex', gap: '8px', color: 'var(--muted)' }}>
+                                        <span style={{ fontWeight: 600, width: '60px' }}>Details:</span>
+                                        <span style={{ color: 'var(--foreground)' }}>{parsedEvent.description}</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <button
                             onClick={handleConfirm}
                             style={{
                                 width: '100%',
                                 padding: '12px',
-                                background: 'var(--socal-grad-1, #38bdf8)',
+                                background: 'linear-gradient(135deg, #f43f5e, #eab308)',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '12px',
@@ -224,7 +233,7 @@ export const StockCalendarUploader: React.FC<StockCalendarUploaderProps> = ({ us
                                 gap: '8px'
                             }}
                         >
-                            <Calendar size={16} /> Follow All
+                            <Calendar size={16} /> Add to Calendar
                         </button>
                     </motion.div>
                 )}
@@ -239,8 +248,7 @@ export const StockCalendarUploader: React.FC<StockCalendarUploaderProps> = ({ us
                         <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
                             <Check size={32} />
                         </div>
-                        <p style={{ fontWeight: 800, fontSize: '18px' }}>Sync Complete!</p>
-                        <p style={{ fontSize: '14px', color: 'var(--muted)' }}>Your earnings calendar is up to date.</p>
+                        <p style={{ fontWeight: 800, fontSize: '18px' }}>Added to Calendar!</p>
                     </motion.div>
                 )}
 

@@ -1,14 +1,24 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
+import { PopoverPosition } from '../../lib/calendar-utils'
 
 interface CommandBarProps {
     isCommandOpen: boolean
     setIsCommandOpen: (open: boolean) => void
     commandInput: string
     setCommandInput: (val: string) => void
-    popoverPosition: any
-    parsedPreview: any
+    popoverPosition: PopoverPosition
+    parsedPreview: {
+        hasTime?: boolean;
+        start: Date;
+        duration: number;
+        preferredTime?: string;
+        frequency?: string;
+        frequencyCount?: number;
+        weatherConstraint?: string;
+        isGoal?: boolean;
+    } | null
     onEnter: () => void
 }
 

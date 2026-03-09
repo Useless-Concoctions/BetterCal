@@ -45,7 +45,19 @@ model User {
   accounts      Account[]
   sessions      Session[]
   events        Event[]
+  subscriptions Subscription[]
 }
+
+model Subscription {
+  id         String   @id @default(cuid())
+  userId     String
+  calendarId String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, calendarId])
+}
+
 
 model Event {
   id           String    @id @default(cuid())
@@ -58,6 +70,8 @@ model Event {
   source       String?   @default("personal")
   isGoal       Boolean   @default(false)
   confirmed    Boolean   @default(true)
+  isPublic     Boolean   @default(false)
+  calendarId   String?
   frequency    String?   // "daily" | "weekly" | "monthly"
   frequencyCount Int?    // e.g. 5 times/week
   preferredTime String?  // "morning" | "afternoon" | "evening"

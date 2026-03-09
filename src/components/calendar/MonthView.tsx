@@ -1,26 +1,25 @@
 import React from 'react'
 import { format, isSameMonth, isSameDay, isToday, addDays, differenceInDays } from 'date-fns'
 import { updateEvent } from '../../lib/actions'
-import { CalendarEvent } from '../../lib/calendar-utils'
+import { CalendarEvent, PopoverPosition, IntelligentSettings } from '../../lib/calendar-utils'
+import { WeatherData } from '../../lib/weather-utils'
 
 interface MonthViewProps {
-    currentDate: Date
     events: CalendarEvent[]
     monthStart: Date
     calendarDays: Date[]
-    setPopoverPosition: (pos: any) => void
+    setPopoverPosition: (pos: PopoverPosition) => void
     setModalDateContext: (date: Date) => void
     setIsCommandOpen: (open: boolean) => void
     setSelectedEvent: (event: CalendarEvent) => void
     setEvents: (fn: (prev: CalendarEvent[]) => CalendarEvent[]) => void
-    settings: any
-    resolveConflicts: any
+    settings: IntelligentSettings
+    resolveConflicts: (events: CalendarEvent[], settings?: IntelligentSettings, weather?: WeatherData | null) => CalendarEvent[]
     isGuest: boolean
-    weatherData?: any
+    weatherData?: WeatherData | null
 }
 
 export const MonthView: React.FC<MonthViewProps> = ({
-    currentDate,
     events,
     monthStart,
     calendarDays,

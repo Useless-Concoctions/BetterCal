@@ -1,19 +1,20 @@
 import { format, isSameDay, setHours, startOfDay, getHours, setMinutes } from 'date-fns'
-import { CalendarEvent } from '../../lib/calendar-utils'
+import { CalendarEvent, PopoverPosition, IntelligentSettings } from '../../lib/calendar-utils'
 import { updateEvent } from '../../lib/actions'
+import { WeatherData } from '../../lib/weather-utils'
 
 interface DayViewProps {
     currentDate: Date
     events: CalendarEvent[]
-    setPopoverPosition: (pos: any) => void
+    setPopoverPosition: (pos: PopoverPosition) => void
     setModalDateContext: (date: Date) => void
     setIsCommandOpen: (open: boolean) => void
     setSelectedEvent: (event: CalendarEvent) => void
     setEvents: (fn: (prev: CalendarEvent[]) => CalendarEvent[]) => void
-    settings: any
-    resolveConflicts: any
+    settings: IntelligentSettings
+    resolveConflicts: (events: CalendarEvent[], settings?: IntelligentSettings, weather?: WeatherData | null) => CalendarEvent[]
     isGuest: boolean
-    weatherData?: any
+    weatherData?: WeatherData | null
 }
 
 export const DayView: React.FC<DayViewProps> = ({

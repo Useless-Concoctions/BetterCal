@@ -45,7 +45,10 @@ export async function getEarningsDates(symbols: string[]) {
     for (const symbol of symbols) {
         try {
             // Fetch quote summary with calendar events
-            const info: any = await yahooFinance.quoteSummary(symbol, { modules: ['calendarEvents', 'price'] });
+            const info = await yahooFinance.quoteSummary(symbol, { modules: ['calendarEvents', 'price'] }) as {
+                calendarEvents?: { earnings?: { earningsDate?: Date[] } }
+                price?: { shortName?: string }
+            };
 
             if (info?.calendarEvents?.earnings?.earningsDate?.[0]) {
                 results.push({

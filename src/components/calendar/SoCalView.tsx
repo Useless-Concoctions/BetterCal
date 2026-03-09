@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, MapPin, TrendingUp, Trophy, Star, Bell, Plus, Sparkles } from 'lucide-react'
+import { Search, MapPin, TrendingUp, Trophy, Star, Bell, Plus, Sparkles, Image as ImageIcon } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { StockCalendarUploader } from './StockCalendarUploader'
+import { EventIngestor } from './EventIngestor'
+import { getSubscriptions, subscribeToCalendar, unsubscribeFromCalendar, createEvent } from '../../lib/actions'
 
 const CATEGORIES = [
     { id: 'local', name: 'Local Events', icon: <MapPin size={16} />, color: '#be185d', bg: '#fce7f3' },
@@ -11,7 +13,7 @@ const CATEGORIES = [
     { id: 'entertainment', name: 'Concerts & Shows', icon: <Star size={16} />, color: '#c2410c', bg: '#ffedd5' },
 ]
 
-const FEATURED_CALENDARS: any[] = [
+const FEATURED_CALENDARS: { id: string, title: string, description: string, category: string, image: string, color: string, subscribers: string }[] = [
     {
         id: 'f1-2026',
         title: 'Formula 1 2026 Season',
@@ -55,10 +57,54 @@ export const SoCalView: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('')
     const [activeCategory, setActiveCategory] = useState<string | null>(null)
     const [subscribed, setSubscribed] = useState<string[]>([])
-    const [showUploader, setShowUploader] = useState(false)
+    const [showStockUploader, setShowStockUploader] = useState(false)
+    const [showEventIngestor, setShowEventIngestor] = useState(false)
 
-    const toggleSubscription = (id: string) => {
-        setSubscribed(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+    useEffect(() => {
+        if (session?.user?.id) {
+            getSubscriptions(session.user.id).then((subs) => {
+                setSubscribed(subs.map(s => s.calendarId))
+            })
+        }
+    }, [session?.user?.id])
+
+    const toggleSubscription = async (id: string) => {
+        if (!session?.user?.id) {
+            alert('Please sign in to subscribe to calendars.');
+            return;
+        }
+
+        const isSubscribed = subscribed.includes(id);
+
+        // Optimistic UI update
+        setSubscribed(prev => isSubscribed ? prev.filter(x => x !== id) : [...prev, id]);
+
+        if (isSubscribed) {
+            await unsubscribeFromCalendar(session.user.id, id);
+        } else {
+            await subscribeToCalendar(session.user.id, id);
+
+            // Mock fetching public events for the newly subscribed calendar
+            // In a real app, this would hit an external API or sync worker
+            const mockStart = new Date();
+            mockStart.setDate(mockStart.getDate() + 2); // 2 days from now
+            mockStart.setHours(14, 0, 0, 0);
+
+            const mockEnd = new Date(mockStart);
+            mockEnd.setHours(16, 0, 0, 0);
+
+            await createEvent(session.user.id, {
+                title: `${FEATURED_CALENDARS.find(c => c.id === id)?.title} Event`,
+                start: mockStart,
+                end: mockEnd,
+                isGoal: false,
+                confirmed: true,
+                isPublic: true,
+                calendarId: id,
+                emoji: '📅',
+                source: 'subscription'
+            });
+        }
     }
 
     return (
@@ -195,11 +241,11 @@ export const SoCalView: React.FC = () => {
                             exit={{ opacity: 0, height: 0 }}
                             style={{ marginBottom: '40px', overflow: 'hidden' }}
                         >
-                            {!showUploader ? (
+                            {!showStockUploader ? (
                                 <motion.div
                                     whileHover={{ scale: 1.01 }}
                                     whileTap={{ scale: 0.99 }}
-                                    onClick={() => setShowUploader(true)}
+                                    onClick={() => setShowStockUploader(true)}
                                     style={{
                                         background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(168, 85, 247, 0.1))',
                                         border: '1px solid rgba(56, 189, 248, 0.3)',
@@ -228,7 +274,53 @@ export const SoCalView: React.FC = () => {
                                 <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
                                     <StockCalendarUploader
                                         userId={session?.user?.id}
-                                        onComplete={() => setShowUploader(false)}
+                                        onComplete={() => setShowStockUploader(false)}
+                                    />
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
+                    {(activeCategory === null || searchQuery.toLowerCase().includes('flyer') || searchQuery.toLowerCase().includes('poster')) && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            style={{ marginBottom: '40px', overflow: 'hidden' }}
+                        >
+                            {!showEventIngestor ? (
+                                <motion.div
+                                    whileHover={{ scale: 1.01 }}
+                                    whileTap={{ scale: 0.99 }}
+                                    onClick={() => setShowEventIngestor(true)}
+                                    style={{
+                                        background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.1), rgba(234, 179, 8, 0.1))',
+                                        border: '1px solid rgba(244, 63, 94, 0.3)',
+                                        borderRadius: '24px',
+                                        padding: '40px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        backdropFilter: 'blur(10px)'
+                                    }}
+                                >
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                            <ImageIcon size={16} style={{ color: '#f43f5e' }} />
+                                            <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#f43f5e' }}>Universal Ingestion</span>
+                                        </div>
+                                        <h2 style={{ fontSize: '28px', fontWeight: 900, letterSpacing: '-0.03em', marginBottom: '8px' }}>Digitize any flyer.</h2>
+                                        <p style={{ color: 'var(--muted)', fontSize: '15px' }}>Drop an image of a poster, flyer, or screenshot, and we'll instantly parse it into a calendar event.</p>
+                                    </div>
+                                    <div style={{ padding: '16px', background: 'white', borderRadius: '16px', color: 'black', fontWeight: 700 }}>
+                                        Try it Out
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+                                    <EventIngestor
+                                        userId={session?.user?.id}
+                                        onComplete={() => setShowEventIngestor(false)}
                                     />
                                 </div>
                             )}

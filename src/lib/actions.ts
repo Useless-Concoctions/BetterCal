@@ -29,6 +29,8 @@ export async function createEvent(userId: string, event: Omit<CalendarEvent, 'id
             preferredTime: event.preferredTime,
             duration: event.duration,
             weatherConstraint: event.weatherConstraint,
+            isPublic: event.isPublic,
+            calendarId: event.calendarId,
         }
     })
     revalidatePath('/')
@@ -52,6 +54,8 @@ export async function updateEvent(id: string, event: Partial<CalendarEvent>) {
             preferredTime: event.preferredTime,
             duration: event.duration,
             weatherConstraint: event.weatherConstraint,
+            isPublic: event.isPublic,
+            calendarId: event.calendarId,
         }
     })
     revalidatePath('/')
@@ -62,6 +66,45 @@ export async function deleteEvent(id: string) {
     await prisma.event.delete({
         where: { id }
     })
+    revalidatePath('/')
+}
+
+export async function getSubscriptions(userId: string) {
+    return await prisma.subscription.findMany({
+        where: { userId }
+    })
+}
+
+export async function subscribeToCalendar(userId: string, calendarId: string) {
+    await prisma.subscription.upsert({
+        where: {
+            userId_calendarId: { userId, calendarId }
+        },
+        update: {},
+        create: {
+            userId,
+            calendarId
+        }
+    })
+    revalidatePath('/')
+}
+
+export async function unsubscribeFromCalendar(userId: string, calendarId: string) {
+    await prisma.subscription.delete({
+        where: {
+            userId_calendarId: { userId, calendarId }
+        }
+    })
+
+    // Specifically remove the public events associated with this calendar for this user
+    await prisma.event.deleteMany({
+        where: {
+            userId,
+            calendarId,
+            isPublic: true
+        }
+    })
+
     revalidatePath('/')
 }
 

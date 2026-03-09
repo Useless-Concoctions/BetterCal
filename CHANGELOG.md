@@ -5,12 +5,16 @@ All notable changes to **BetterCal** will be documented in this file.
 ## [0.9.0] - 2026-03-09
 
 ### Added
+- **Persistent SoCal**: Designed a robust `Subscription` database model to link users securely to public calendar feeds. Added `isPublic` and `calendarId` to the `Event` structure to track public calendar synchronization.
+- **Universal Event Ingestion**: Created a new `EventIngestor.tsx` interface and a `processGenericScreenshot` action in the backend. Leveraging Gemini 1.5 Flash, the application can now parse event details (dates, titles, times) from any uploaded image (flyers, screenshots) directly into the user's primary calendar view.
 - **Product Vision**: Created a dedicated `docs/VISION.md` document outlining the "North Star" for the Social Calendar (SoCal) ecosystem, focusing on the "Followable Feed of Time."
 - **Project Roadmap**: Created a high-fidelity `ROADMAP.md` strategic architecture, separating long-term vision from tactical product initiatives.
 - **Personalization Engine**: Introduced `interests` and `location` fields to the `IntelligentSettings` to enable regional and interest-aware event discovery.
 
 ### Changed
-- **SoCal Subscription Model**: Transitioned the SoCal discovery logic from a utility "Add Event" model to a social "Following" and "Subscription" model for public calendar streams.
+- **Architecture Refactoring**: Completely overhauled the massive `page.tsx` controller. Extracted complex NLP parsing (`chrono-node`), data fetching, caching, and mutator logic into dedicated, clean React Hooks (`useCalendarData`, `useCommandParser`, `useEventMutations`, `useSunTheme`), reducing the main component footprint by half.
+- **TypeScript Strictness**: Hunted down and eliminated all explicit `any` and implicit `any` usage across the frontend codebase, establishing strict interfaces for calendar properties (e.g. `IntelligentSettings`, `PopoverPosition`). The build now compiles cleanly with zero IDE warnings.
+- **SoCal Subscription Model**: Transitioned the SoCal discovery logic from a utility "Add Event" model to a persistent social "Following" and "Subscription" model for public calendar streams via Prisma and server actions.
 - **SoCal AI Logic**: Refined the "SoCal AI Magic" assistant to focus on identifying and suggesting public subscriptions based on user context (e.g., stock portfolio analysis).
 - **Settings Modal Expansion**: Integrated high-fidelity UI fields for user location and interests into the Settings modal to drive personalized curation.
 - **Documentation Refresh**: Revamped the Features section in the `README.md` and standardized core documentation footer links to point to `ROADMAP.md`, `CHANGELOG.md`, `VISION.md`, and `SECURITY.md`.

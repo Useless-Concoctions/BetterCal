@@ -4,19 +4,21 @@ import { Plus, Settings, RefreshCw, ChevronLeft, ChevronRight, Calendar, Columns
 import { motion, AnimatePresence } from 'framer-motion'
 import { signIn, signOut } from 'next-auth/react'
 import { syncGoogleAction } from "../../lib/actions"
+import { PopoverPosition } from '../../lib/calendar-utils'
+import { Session } from 'next-auth'
 
 interface CalendarHeaderProps {
     currentDate: Date
     setCurrentDate: (date: Date) => void
-    view: string
-    setView: (view: any) => void
+    view: 'week' | 'day' | 'schedule' | 'socal' | 'month'
+    setView: (view: 'week' | 'day' | 'schedule' | 'socal' | 'month') => void
     isViewsOpen: boolean
     setIsViewsOpen: (open: boolean) => void
     setIsCommandOpen: (open: boolean) => void
     setIsSettingsOpen: (open: boolean) => void
-    setPopoverPosition: (pos: any) => void
+    setPopoverPosition: (pos: PopoverPosition) => void
     viewsContainerRef: React.RefObject<HTMLDivElement | null>
-    session: any
+    session: Session | null
 }
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = ({

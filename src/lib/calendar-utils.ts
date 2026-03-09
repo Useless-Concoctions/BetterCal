@@ -4,12 +4,11 @@ import {
     setHours,
     setMinutes,
     startOfDay,
-    isWithinInterval,
     areIntervalsOverlapping,
     addHours,
     getHours
 } from 'date-fns'
-import { getForecast, WeatherData, isWeatherSuitable } from './weather-utils'
+import { WeatherData, isWeatherSuitable } from './weather-utils'
 
 export interface CalendarEvent {
     id: string
@@ -23,11 +22,16 @@ export interface CalendarEvent {
     frequency?: 'daily' | 'weekly' | 'monthly'
     frequencyCount?: number
     preferredTime?: 'morning' | 'afternoon' | 'evening'
-    source?: 'personal' | 'work' | 'shared'
+    source?: 'personal' | 'work' | 'shared' | 'ingested' | 'subscription'
     emoji?: string
+    isPublic?: boolean
+    calendarId?: string
     duration?: number
     weatherConstraint?: string
 }
+
+export type PopoverPosition = { x: number; y: number; width: number; height: number } | null;
+
 export function findFirstAvailableSlot(
     date: Date,
     durationMinutes: number,
@@ -155,7 +159,7 @@ export function resolveConflicts(
             return hr >= settings.quietHours.start && hr < settings.quietHours.end
         }
 
-        let startHr = getHours(finalStart)
+        const startHr = getHours(finalStart)
         if (isQuietHours(startHr)) {
             let parsedQuietHoursEndDay = finalStart;
             if (settings.quietHours.start > settings.quietHours.end && startHr >= settings.quietHours.start) {

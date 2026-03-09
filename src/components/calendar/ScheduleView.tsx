@@ -1,10 +1,10 @@
 import React from 'react'
 import { format } from 'date-fns'
-import { CalendarEvent } from '../../lib/calendar-utils'
+import { CalendarEvent, PopoverPosition } from '../../lib/calendar-utils'
 
 interface ScheduleViewProps {
     groupedEvents: { date: Date, events: CalendarEvent[] }[]
-    setPopoverPosition: (pos: any) => void
+    setPopoverPosition: (pos: PopoverPosition) => void
     setSelectedEvent: (event: CalendarEvent) => void
 }
 

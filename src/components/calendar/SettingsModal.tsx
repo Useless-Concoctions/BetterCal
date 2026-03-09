@@ -2,14 +2,14 @@
 
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { IntelligentSettings } from '../../lib/calendar-utils'
+import { IntelligentSettings, PopoverPosition } from '../../lib/calendar-utils'
 
 interface SettingsModalProps {
     isOpen: boolean
     setIsOpen: (open: boolean) => void
     settings: IntelligentSettings
     setSettings: (settings: IntelligentSettings) => void
-    popoverPosition: any
+    popoverPosition: PopoverPosition
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
