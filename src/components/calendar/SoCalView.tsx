@@ -115,123 +115,26 @@ export const SoCalView: React.FC = () => {
             background: 'transparent'
         }}>
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                <div style={{ marginBottom: '80px' }}>
-                    <motion.div
+                <div style={{ marginBottom: '40px' }}>
+                    <motion.h1
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
                         style={{
-                            fontSize: '11px',
-                            fontWeight: 800,
-                            letterSpacing: '0.2em',
-                            color: 'var(--muted)',
-                            textTransform: 'uppercase',
-                            marginBottom: '24px'
+                            fontSize: '48px',
+                            fontWeight: 900,
+                            letterSpacing: '-0.04em',
+                            lineHeight: 1.1,
+                            color: 'white',
+                            maxWidth: '700px',
+                            textShadow: '0 2px 20px rgba(0,0,0,0.2)'
                         }}
                     >
-                        Explore Collections
-                    </motion.div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '40px' }}>
-                        <motion.h1
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            style={{
-                                fontSize: '64px',
-                                fontWeight: 900,
-                                letterSpacing: '-0.06em',
-                                lineHeight: 1,
-                                color: 'var(--foreground)',
-                                maxWidth: '600px',
-                                textShadow: '0 2px 10px rgba(255,255,255,0.1)'
-                            }}
-                        >
-                            Subscribe to the pulse of your world.
-                        </motion.h1>
-
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 }}
-                            style={{ position: 'relative', width: '320px', marginTop: '12px' }}
-                        >
-                            <Search size={18} style={{ position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
-                            <input
-                                type="text"
-                                placeholder="Search schedules..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 12px 12px 32px',
-                                    border: 'none',
-                                    borderBottom: '1px solid var(--border)',
-                                    fontSize: '15px',
-                                    outline: 'none',
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    color: 'var(--foreground)',
-                                    fontWeight: 500,
-                                    transition: 'all 0.2s',
-                                    backdropFilter: 'blur(10px)',
-                                    borderRadius: '8px',
-                                    paddingLeft: '36px'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderColor = 'var(--foreground)'
-                                    e.target.style.background = 'rgba(255, 255, 255, 0.2)'
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderColor = 'var(--border)'
-                                    e.target.style.background = 'rgba(255, 255, 255, 0.1)'
-                                }}
-                            />
-                            <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
-                        </motion.div>
-                    </div>
+                        Subscribe to the pulse of your world.
+                    </motion.h1>
                 </div>
 
-                <div style={{ display: 'flex', gap: '24px', marginBottom: '64px', overflowX: 'auto', paddingBottom: '8px', borderBottom: '1px solid var(--border)' }}>
-                    <button
-                        onClick={() => setActiveCategory(null)}
-                        style={{
-                            padding: '12px 0',
-                            background: 'none',
-                            border: 'none',
-                            color: activeCategory === null ? 'var(--foreground)' : 'var(--muted)',
-                            borderBottom: activeCategory === null ? '2px solid var(--foreground)' : '2px solid transparent',
-                            fontWeight: 700,
-                            fontSize: '13px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            whiteSpace: 'nowrap'
-                        }}
-                    >
-                        All Collections
-                    </button>
-                    {CATEGORIES.map((cat, i) => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setActiveCategory(cat.id)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '12px 0',
-                                background: 'none',
-                                border: 'none',
-                                color: activeCategory === cat.id ? 'var(--foreground)' : 'var(--muted)',
-                                borderBottom: activeCategory === cat.id ? `2px solid ${cat.color}` : '2px solid transparent',
-                                fontWeight: 700,
-                                fontSize: '13px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                whiteSpace: 'nowrap'
-                            }}
-                        >
-                            {cat.name}
-                        </button>
-                    ))}
-                </div>
+
 
                 <AnimatePresence>
                     {(activeCategory === 'finance' || searchQuery.toLowerCase().includes('stock') || searchQuery.toLowerCase().includes('earning')) && (
@@ -330,84 +233,85 @@ export const SoCalView: React.FC = () => {
 
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: '1fr',
-                    gap: '12px',
-                    background: 'transparent',
-                    borderRadius: '12px',
-                    overflow: 'hidden'
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                    gap: '24px',
+                    background: 'transparent'
                 }}>
                     {FEATURED_CALENDARS.filter(c => !activeCategory || c.category.toLowerCase() === activeCategory).map((cal, i) => (
                         <motion.div
                             key={cal.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 * i }}
                             style={{
-                                display: 'grid',
-                                gridTemplateColumns: '120px 1fr 200px',
-                                gap: '32px',
-                                padding: '32px',
-                                background: 'rgba(255, 255, 255, 0.8)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '20px',
+                                padding: '24px',
+                                background: 'rgba(0, 0, 0, 0.15)',
                                 backdropFilter: 'blur(20px)',
-                                border: '1px solid rgba(255, 255, 255, 0.2)',
-                                borderRadius: '16px',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '24px',
                                 cursor: 'pointer',
                                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                alignItems: 'center',
-                                boxShadow: '0 4px 24px -1px rgba(0, 0, 0, 0.05)'
+                                boxShadow: '0 4px 24px -1px rgba(0, 0, 0, 0.1)',
+                                overflow: 'hidden'
                             }}
                             onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
-                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)'
-                                e.currentTarget.style.transform = 'translateY(-2px)'
-                                e.currentTarget.style.boxShadow = '0 12px 32px -4px rgba(0, 0, 0, 0.1)'
+                                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.25)'
+                                e.currentTarget.style.transform = 'translateY(-4px)'
+                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
                             }}
                             onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
-                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)'
+                                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.15)'
                                 e.currentTarget.style.transform = 'translateY(0)'
-                                e.currentTarget.style.boxShadow = '0 4px 24px -1px rgba(0, 0, 0, 0.05)'
+                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
                             }}
                         >
-                            <div style={{ height: '80px', width: '120px', borderRadius: '8px', overflow: 'hidden' }}>
-                                <img src={cal.image} alt={cal.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(0.2)' }} />
-                            </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-                                    <span style={{
-                                        fontSize: '10px',
-                                        fontWeight: 800,
-                                        letterSpacing: '0.05em',
-                                        color: cal.color,
-                                        textTransform: 'uppercase'
-                                    }}>
-                                        {cal.category}
-                                    </span>
-                                    <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        <Bell size={12} /> {cal.subscribers}
-                                    </span>
+                            <div style={{ display: 'flex', gap: '20px' }}>
+                                <div style={{ height: '80px', width: '80px', borderRadius: '16px', overflow: 'hidden', flexShrink: 0 }}>
+                                    <img src={cal.image} alt={cal.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 </div>
-                                <h3 style={{ fontSize: '20px', fontWeight: 900, color: 'var(--foreground)', letterSpacing: '-0.04em' }}>{cal.title}</h3>
-                                <p style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: 1.4, maxWidth: '500px' }}>
-                                    {cal.description}
-                                </p>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{
+                                            fontSize: '10px',
+                                            fontWeight: 800,
+                                            letterSpacing: '0.1em',
+                                            color: 'rgba(255, 255, 255, 0.6)',
+                                            textTransform: 'uppercase'
+                                        }}>
+                                            {cal.category}
+                                        </span>
+                                    </div>
+                                    <h3 style={{ fontSize: '20px', fontWeight: 900, color: 'white', letterSpacing: '-0.02em', lineHeight: 1.2 }}>{cal.title}</h3>
+                                </div>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <p style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.7)', lineHeight: 1.5, flex: 1 }}>
+                                {cal.description}
+                            </p>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+                                <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.5)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Bell size={12} /> {cal.subscribers}
+                                </span>
                                 <button
                                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); toggleSubscription(cal.id); }}
                                     style={{
-                                        background: subscribed.includes(cal.id) ? 'transparent' : 'var(--foreground)',
-                                        color: subscribed.includes(cal.id) ? 'var(--foreground)' : 'white',
-                                        border: subscribed.includes(cal.id) ? '1px solid var(--border)' : 'none',
-                                        padding: '10px 24px',
-                                        borderRadius: '8px',
+                                        background: subscribed.includes(cal.id) ? 'rgba(255, 255, 255, 0.1)' : 'white',
+                                        color: subscribed.includes(cal.id) ? 'white' : 'black',
+                                        border: subscribed.includes(cal.id) ? '1px solid rgba(255, 255, 255, 0.2)' : 'none',
+                                        padding: '8px 16px',
+                                        borderRadius: '100px',
                                         fontSize: '13px',
                                         fontWeight: 800,
                                         cursor: 'pointer',
                                         transition: 'all 0.2s',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '8px'
+                                        gap: '6px'
                                     }}
                                 >
                                     {subscribed.includes(cal.id) ? 'Subscribed' : <><Plus size={14} strokeWidth={3} /> Subscribe</>}
