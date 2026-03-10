@@ -1,6 +1,6 @@
 import React from 'react'
 import { format, subMonths, addMonths, subWeeks, addWeeks, subDays, addDays } from 'date-fns'
-import { Plus, Settings, RefreshCw, ChevronLeft, ChevronRight, Calendar, Columns, Square, List, LogIn } from 'lucide-react'
+import { Plus, Settings, RefreshCw, ChevronLeft, ChevronRight, Calendar, Columns, Square, List, LogIn, Search } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { signIn, signOut } from 'next-auth/react'
 import { syncGoogleAction } from "../../lib/actions"
@@ -12,6 +12,8 @@ interface CalendarHeaderProps {
     setCurrentDate: (date: Date) => void
     view: 'week' | 'day' | 'schedule' | 'socal' | 'month'
     setView: (view: 'week' | 'day' | 'schedule' | 'socal' | 'month') => void
+    activeCategory: string | null
+    setActiveCategory: (cat: string | null) => void
     isViewsOpen: boolean
     setIsViewsOpen: (open: boolean) => void
     setIsCommandOpen: (open: boolean) => void
@@ -26,6 +28,8 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
     setCurrentDate,
     view,
     setView,
+    activeCategory,
+    setActiveCategory,
     isViewsOpen,
     setIsViewsOpen,
     setIsCommandOpen,
@@ -44,18 +48,6 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         } finally {
             setIsSyncing(false)
         }
-    }
-
-    const handlePrev = () => {
-        if (view === 'week') setCurrentDate(subWeeks(currentDate, 1))
-        else if (view === 'day' || view === 'schedule') setCurrentDate(subDays(currentDate, 1))
-        else setCurrentDate(subMonths(currentDate, 1))
-    }
-
-    const handleNext = () => {
-        if (view === 'week') setCurrentDate(addWeeks(currentDate, 1))
-        else if (view === 'day' || view === 'schedule') setCurrentDate(addDays(currentDate, 1))
-        else setCurrentDate(addMonths(currentDate, 1))
     }
 
     return (
@@ -86,6 +78,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                         className="logo-text"
                         onClick={() => {
                             setView('month')
+                            setActiveCategory(null)
                             setIsViewsOpen(false)
                         }}
                         style={{
@@ -100,6 +93,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                         className="logo-text"
                         onClick={() => {
                             setView('socal')
+                            setActiveCategory(null)
                             setIsViewsOpen(false)
                         }}
                         style={{
@@ -114,67 +108,84 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                         <span style={{ fontWeight: view === 'socal' ? 950 : 400, transition: 'font-weight 0.5s ease' }}>So</span><span style={{ fontWeight: 400 }}>Cal</span>
                     </div>
                 </div>
+
                 <div className="nav-links">
-                    <div
-                        className="nav-link"
-                        onClick={() => {
-                            setCurrentDate(new Date())
-                            if (view === 'socal') setView('month')
-                            setIsViewsOpen(false)
-                        }}
-                        style={{
-                            color: view === 'socal' ? 'var(--socal-text-contrast)' : undefined,
-                            transition: 'color 0.5s ease'
-                        }}
-                    >
-                        Today
-                    </div>
+                    {view !== 'socal' ? (
+                        <>
+                            <div
+                                className="nav-link"
+                                onClick={() => {
+                                    setCurrentDate(new Date())
+                                    setIsViewsOpen(false)
+                                }}
+                                style={{
+                                    transition: 'color 0.5s ease'
+                                }}
+                            >
+                                Today
+                            </div>
 
-                    <div ref={viewsContainerRef} className="nav-link-container" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div
-                            className={`nav-link ${isViewsOpen ? 'active' : ''}`}
-                            onClick={() => setIsViewsOpen(!isViewsOpen)}
-                            style={{
-                                color: view === 'socal' ? 'var(--socal-text-contrast)' : undefined,
-                                transition: 'color 0.5s ease'
-                            }}
-                        >
-                            Views
-                        </div>
-
-                        <AnimatePresence>
-                            {isViewsOpen && (
-                                <motion.div
-                                    style={{ display: 'flex', alignItems: 'center', gap: '16px', overflow: 'hidden' }}
-                                    initial={{ width: 0, opacity: 0 }}
-                                    animate={{ width: 'auto', opacity: 1 }}
-                                    exit={{ width: 0, opacity: 0 }}
-                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                            <div ref={viewsContainerRef} className="nav-link-container" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div
+                                    className={`nav-link ${isViewsOpen ? 'active' : ''}`}
+                                    onClick={() => setIsViewsOpen(!isViewsOpen)}
+                                    style={{
+                                        transition: 'color 0.5s ease'
+                                    }}
                                 >
-                                    <div
-                                        className={`nav-link ${view === 'month' ? 'active' : ''}`}
-                                        onClick={() => setView('month')}
-                                    >
-                                        Month
-                                    </div>
-                                    <div
-                                        className={`nav-link ${view === 'week' ? 'active' : ''}`}
-                                        onClick={() => setView('week')}
-                                    >
-                                        Week
-                                    </div>
-                                    <div
-                                        className={`nav-link ${view === 'day' ? 'active' : ''}`}
-                                        onClick={() => setView('day')}
-                                    >
-                                        Day
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                                    Views
+                                </div>
 
-
+                                <AnimatePresence>
+                                    {isViewsOpen && (
+                                        <motion.div
+                                            style={{ display: 'flex', alignItems: 'center', gap: '16px', overflow: 'hidden' }}
+                                            initial={{ width: 0, opacity: 0 }}
+                                            animate={{ width: 'auto', opacity: 1 }}
+                                            exit={{ width: 0, opacity: 0 }}
+                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        >
+                                            <div
+                                                className={`nav-link ${view === 'month' ? 'active' : ''}`}
+                                                onClick={() => setView('month')}
+                                            >
+                                                Month
+                                            </div>
+                                            <div
+                                                className={`nav-link ${view === 'week' ? 'active' : ''}`}
+                                                onClick={() => setView('week')}
+                                            >
+                                                Week
+                                            </div>
+                                            <div
+                                                className={`nav-link ${view === 'day' ? 'active' : ''}`}
+                                                onClick={() => setView('day')}
+                                            >
+                                                Day
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {['local', 'sports', 'finance', 'entertainment'].map(cat => (
+                                <div
+                                    key={cat}
+                                    className={`nav-link ${activeCategory === cat ? 'active' : ''}`}
+                                    onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                                    style={{
+                                        color: 'var(--socal-text-contrast)',
+                                        fontWeight: activeCategory === cat ? 900 : 500,
+                                        textTransform: 'capitalize'
+                                    }}
+                                >
+                                    {cat === 'entertainment' ? 'Concerts' : cat}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -194,6 +205,17 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
                         color: view === 'socal' ? 'var(--socal-text-contrast)' : 'var(--foreground)',
                         transition: 'color 0.5s ease'
                     }}>
+                        <div
+                            className="plus-btn"
+                            style={{ color: 'inherit' }}
+                            title="Search calendars"
+                            onClick={() => {
+                                alert('Global search coming soon!')
+                            }}
+                        >
+                            <Search size={14} strokeWidth={2.5} />
+                        </div>
+
                         <div
                             id="plus-btn"
                             className="plus-btn"

@@ -2,6 +2,39 @@
 
 All notable changes to **BetterCal** will be documented in this file.
 
+## [Unreleased]
+
+## [0.9.1] - 2026-03-10
+
+### Added
+- **Global Calendar Search**: Relocated the search functionality from the SoCal page to a persistent global icon in the top-right navigation bar, enabling discovery from any view.
+- **Integrated Magic Ingestion**: The `EventIngestor` (Universal Ingestion) is now accessible directly via a toggle in the **CommandBar**, allowing users to upload screenshots and parse events without leaving their current view.
+- **SoCal Category Navigation**: Integrated category filters (Local, Sports, Finance, Concerts) directly into the main header when in SoCal view for faster, more intuitive discovery.
+
+### Changed
+- **SoCal UI Overhaul**: Completely redesigned the SoCal discovery experience:
+  - Transitioned from a full-width list to a responsive grid of high-fidelity cards.
+  - Implemented a "dark translucent" glassy aesthetic for cards to blend seamlessly with dynamic backgrounds.
+  - Added edge-to-edge cover imagery and improved typography for a premium, App Store-inspired feel.
+- **Full-Width Discovery**: Removed container constraints in SoCal view to better match the padded dimensions of the primary calendar agenda.
+- **Header Logic Refactoring**: Re-engineered the `CalendarHeader` to intelligently switch between standard view controls and SoCal category filters based on the active perspective.
+- **Search Aesthetic**: Refined the global search trigger with a minimalist icon set to maintain the high-end icon stroke weight consistency.
+
+### Fixed
+- **JSX Architecture Stability**: Resolved several critical JSX nesting and state management errors during the UI refactoring process.
+- **Logo Interaction**: Fixed an inconsistency where clicking the SoCal logo didn't reset active category filters.
+
+### Added
+- **Group Smart Goals**: Core implementation of collaborative liquid scheduling. Groups can now define shared goals (e.g., "@fitness Gym 3x a week") that automatically find the first available slot where all members are simultaneously free.
+- **Intersectional Scheduling Engine**: Enhanced the `resolveConflicts` logic to handle multi-user constraints by intersecting the whitespace of all group members' schedules.
+- **Liquid Invite Flow**: Designed a "Impact Preview" landing page for group invites. Prospective members can see exactly how joining a group will shift existing events before they commit.
+- **Membership Status Tracking**: Added `PENDING`, `ACCEPTED`, and `DECLINED` states to group memberships to manage invited users without disrupting existing group logic.
+- **Group Management UI**: Integrated a dedicated "Groups" tab in the Settings modal for creating groups, joining via invite codes, and managing existing memberships.
+- **Command Bar tagging**: The NLP parser now recognizes `@groupname` tokens to associate events with specific collective coordination contexts.
+
+### Changed
+- **Server Action Architecture**: Updated `createEvent` and `getEvents` to be group-aware, allowing for seamless integration of shared events into personal calendar views.
+
 ## [0.9.0] - 2026-03-09
 
 ### Added
@@ -225,4 +258,4 @@ All notable changes to **BetterCal** will be documented in this file.
 - **Ambient Vibe Tinting**: The entire UI dynamically tints its border and logo colors based on your current focus block (Focus Blue, Social Rose, etc.).
 
 ---
-*Last updated: 2026-03-09* (SoCal vision and strategic roadmap architecture)
+*Last updated: 2026-03-10* (SoCal UI Overhaul and Universal Ingestion Integration)
